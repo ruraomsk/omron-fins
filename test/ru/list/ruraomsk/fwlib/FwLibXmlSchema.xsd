@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<xs:schema version="1.0"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            схема описания структуры системы для библиотеки fwlib
+        </xs:documentation>
+    </xs:annotation>
+    <xs:element name="FwSpace" type="FwSpaceNodes" />
+    <xs:complexType name="FwSpaceNodes">
+        <xs:sequence>
+            <xs:element name="names" type="NameNode" maxOccurs="100" />
+            <xs:element name="devices" type="DeviceNodes" maxOccurs="100"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="DeviceNodes">
+        <xs:sequence>
+            <xs:element name="device" type="DeviceTNode" maxOccurs="100"/>
+        </xs:sequence>
+    </xs:complexType>        
+    
+    <xs:complexType name="DeviceNode">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string"/>
+            <xs:element name="IPaddress" type="xs:string"/>
+            <xs:element name="port" type="xs:integer"/>
+            <xs:element name="controller" type="xs:integer"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="NameNode">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string"/>
+            <xs:element name="controller" type="xs:integer"/>
+            <xs:element name="uId" type="xs:integer"/>
+            <xs:element name="format" type="xs:integer" /> 
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
