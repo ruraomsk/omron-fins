@@ -21,6 +21,7 @@ public class FwMasterDevice extends Thread
     private ConcurrentHashMap<Long, FwOneReg> data = null;
     private ConcurrentLinkedQueue<FwOneReg> history = null;
     private ConcurrentLinkedQueue<FwBaseMess> inmessages = null;
+    private ConcurrentLinkedQueue<FwBaseMess> outmessages = null;
     private Socket socket;
     private int controller;
     public int nomerinfo = 1;
@@ -38,6 +39,7 @@ public class FwMasterDevice extends Thread
     private byte errFuncCode = 0;
     private long lastGiveMe = new Date().getTime();
     private long lastLive = new Date().getTime();
+    private String UPCMessage="";
 
     public FwMasterDevice(Socket socket, int controller, FwRegisters tableDecode)
     {
@@ -47,45 +49,38 @@ public class FwMasterDevice extends Thread
         data = new ConcurrentHashMap<>(FwUtil.VALUE_UIDS);
         history = new ConcurrentLinkedQueue<>();
         inmessages = new ConcurrentLinkedQueue<>();
-        for (FwRegister reg : tableDecode.getCollection())
-        {
-            if ((reg.getController() == controller))
-            {
+        outmessages = new ConcurrentLinkedQueue<>();
+
+        for (FwRegister reg : tableDecode.getCollection()) {
+            if ((reg.getController() == controller)) {
                 FwOneReg onereg = new FwOneReg(new Date(), reg);
                 data.put(reg.getKey(), onereg);
             }
         }
-        for (FwOneReg oreg : data.values())
-        {
+        for (FwOneReg oreg : data.values()) {
             history.add(oreg);
         }
     }
 
-
     public void gogo()
     {
-        try
-        {
-            connect=false;
+        try {
+            connect = false;
             mytransport = new FwTransport(socket, tableDecode);
-            if (mytransport == null)
-            {
+            if (mytransport == null) {
                 error = 5;
                 return;
             }
-            if (!(connect = mytransport.connect()))
-            {
+            if (!(connect = mytransport.connect())) {
                 error = 6;
                 return;
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             error = 12;
             return;
         }
-        if (!connect)
-        {
+        if (!connect) {
             return;
         }
         start();
@@ -112,6 +107,12 @@ public class FwMasterDevice extends Thread
     {
         return socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
     }
+    public String myIP(){
+        return socket.getInetAddress().getHostAddress();
+    }
+    public int myPort(){
+        return socket.getPort();
+    }
 
     @Override
     public void run()
@@ -119,68 +120,66 @@ public class FwMasterDevice extends Thread
         FwMesCtrl givemeAll = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALLINFO);
         sendMessage(givemeAll);
         lastGiveMe = new Date().getTime();
-        FwResponse resp = null;
-        int count = 1;
+        FwResponse resp;
+        countlive = 1;
         error = 0;
-        try
-        {
-            while (!Thread.interrupted() & connect)
-            {
+        try {
+            while (!Thread.interrupted() & connect) {
                 long now = new Date().getTime();
-                if ((now - lastGiveMe) > getStepGiveMe())
-                {
+                if ((now - lastGiveMe) > getStepGiveMe()) {
                     givemeAll = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALLINFO);
                     sendMessage(givemeAll);
                     lastGiveMe = now;
                 }
-                if ((now - lastLive) > getStepLive())
-                {
-                    FwMesLive meslive = new FwMesLive(controller, count);
+                if ((now - lastLive) > getStepLive()) {
+                    FwMesLive meslive = new FwMesLive(controller, countlive++);
+                    if(countlive>32000) countlive=1;
                     sendMessage(meslive);
                     lastLive = now;
-                    count++;
                 }
 
                 //System.out.println("MasterDev in");
                 resp = mytransport.readMessage();
-                while (resp != null)
-                {
+                while (resp != null) {
                     //if(FwUtil.FP_DEBUG) System.err.println("step 1");
-                    if (resp.getController() != controller)
-                    {
+                    if (resp.getController() != controller) {
                         error = 1;
                         errFuncCode = resp.getFunctionCode();
                         disconect();
                         break;
                     }
                     //if(FwUtil.FP_DEBUG) System.err.println("step 2");
-                    switch (resp.getFunctionCode())
-                    {
+                    switch (resp.getFunctionCode()) {
                         case FwUtil.FP_CODE_INFO:
                             readValues(resp.getInfo());
                             break;
                         case FwUtil.FP_CODE_35H:
-                            // kvit
+                            outmessages.add(resp.getKvit());
                             break;
                         case FwUtil.FP_CODE_36H:
+                            outmessages.add(resp.getSetup());
                             break;
                         case FwUtil.FP_CODE_30H:
                             readDiags(resp.getDiag());
                             break;
                         case FwUtil.FP_CODE_91H:
+                            outmessages.add(resp.getSynctime());
                             break;
                     }
                     resp = mytransport.readMessage();
+                }
+                FwBaseMess message = inmessages.poll();
+                while (message != null) {
+                    sendMessage(message);
+                    message = inmessages.poll();
                 }
                 Thread.sleep(stepTime);
                 connect = mytransport.isConnected();
             }
 
         }
-        catch (InterruptedException ex)
-        {
-            if (FwUtil.FP_DEBUG)
-            {
+        catch (InterruptedException ex) {
+            if (FwUtil.FP_DEBUG) {
                 System.err.println("FwMasterDevice " + ex.getMessage());
             }
             error = 3;
@@ -191,8 +190,7 @@ public class FwMasterDevice extends Thread
     private void readValues(FwInfo info)
     {
         nomerinfo = info.getNomer();
-        for (int i = 0; i < info.getSize(); i++)
-        {
+        for (int i = 0; i < info.getSize(); i++) {
             FwOneReg value = info.getOneReg(i);
             //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
             history.add(value);
@@ -211,6 +209,16 @@ public class FwMasterDevice extends Thread
     public FwOneReg getHistory()
     {
         return history.poll();
+    }
+
+    public FwBaseMess readMessage()
+    {
+        return outmessages.poll();
+    }
+
+    public void putMessage(FwBaseMess message)
+    {
+        inmessages.add(message);
     }
 
     public FwRegisters getTableDecode()
@@ -251,8 +259,7 @@ public class FwMasterDevice extends Thread
     public Object getValue(int uId)
     {
         long key = FwRegister.makeKey(controller, uId, true);
-        if (data.get(key) == null)
-        {
+        if (data.get(key) == null) {
             return null;
         }
         return data.get(key).getValue();
@@ -261,8 +268,7 @@ public class FwMasterDevice extends Thread
     public Object getCode(int uId)
     {
         long key = FwRegister.makeKey(controller, uId, false);
-        if (data.get(key) == null)
-        {
+        if (data.get(key) == null) {
             return null;
         }
         return data.get(key).getValue();
@@ -270,8 +276,7 @@ public class FwMasterDevice extends Thread
 
     private void readDiags(FwDiag diag)
     {
-        for (int i = 0; i < diag.getSize(); i++)
-        {
+        for (int i = 0; i < diag.getSize(); i++) {
             FwOneReg value = new FwOneReg(new Date(), tableDecode.getRegisterDiag(controller, diag.getDiagUId(i)));
             value.setValue(diag.getDiagCode(i));
             value.setGood(FwUtil.FP_DATA_GOOD);
@@ -281,6 +286,7 @@ public class FwMasterDevice extends Thread
 
             //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
         }
+        UPCMessage=diag.getUPCMessage();
     }
 
     /**
@@ -305,5 +311,8 @@ public class FwMasterDevice extends Thread
     public byte getErrFuncCode()
     {
         return errFuncCode;
+    }
+    public String getUPCMessage(){
+        return UPCMessage;
     }
 }

@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
- public class SlaveListner
+public class SlaveListner
 {
 
     private ConcurrentLinkedQueue<FwMessage> qMess = new ConcurrentLinkedQueue<FwMessage>();
@@ -62,8 +62,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
     public void notLive()
     {
-        if (++count > 32000)
-        {
+        if (++count > 32000) {
             count = 32000;
         }
     }

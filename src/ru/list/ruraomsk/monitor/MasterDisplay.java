@@ -82,6 +82,7 @@ class MasterDisplay extends Thread
                     Message.append("\nТекущий номер посылки=" + Integer.toString(md.nomerinfo)
                             + " Ошибок=" + Integer.toString(md.error));
                     Message.append("\nПоследняя синхронизация " + md.lastsync.toString());
+                    Message.append("\nСтрока UPC="+md.getUPCMessage());
                     FwOneReg oreg = md.getHistory();
                     boolean need = false;
                     while (oreg != null)

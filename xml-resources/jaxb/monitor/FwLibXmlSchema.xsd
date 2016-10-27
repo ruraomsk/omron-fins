@@ -14,12 +14,12 @@ and open the template in the editor.
         </xs:documentation>
     </xs:annotation>
     <xs:element name="FwSpace" >
-    <xs:complexType >
-        <xs:sequence>
-            <xs:element name="names" type="NameNodes" />
-            <xs:element name="devices" type="DeviceNodes"/>
-        </xs:sequence>
-    </xs:complexType>
+        <xs:complexType >
+            <xs:sequence>
+                <xs:element name="names" type="NameNodes" />
+                <xs:element name="devices" type="DeviceNodes"/>
+            </xs:sequence>
+        </xs:complexType>
     </xs:element>
     <xs:complexType name="DeviceNodes">
         <xs:sequence>
@@ -28,10 +28,10 @@ and open the template in the editor.
     </xs:complexType>        
     
     <xs:complexType name="DeviceNode">
-            <xs:attribute name="name" type="xs:string"/>
-            <xs:attribute name="IPadr" type="xs:string"/>
-            <xs:attribute name="port" type="xs:int"/>
-            <xs:attribute name="controller" type="xs:int"/>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="IPadr" type="xs:string"/>
+        <xs:attribute name="port" type="xs:int"/>
+        <xs:attribute name="controller" type="xs:int"/>
     </xs:complexType>
     <xs:complexType name="NameNodes">
         <xs:sequence>
@@ -40,10 +40,11 @@ and open the template in the editor.
     </xs:complexType>        
 
     <xs:complexType name="NameNode">
-            <xs:attribute name="name" type="xs:string"/>
-            <xs:attribute name="controller" type="xs:int"/>
-            <xs:attribute name="type" type="xs:boolean"/>
-            <xs:attribute name="uId" type="xs:int"/>
-            <xs:attribute name="format" type="xs:int" /> 
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="controller" type="xs:int"/>
+        <xs:attribute name="type" type="xs:boolean"/>
+        <xs:attribute name="uId" type="xs:int"/>
+        <xs:attribute name="format" type="xs:int" /> 
+        <xs:attribute name="lenght" type="xs:int" /> 
     </xs:complexType>
 </xs:schema>

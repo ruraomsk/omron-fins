@@ -55,7 +55,7 @@ public class Loader
         for (int i = 0; i < fst.getNames().getName().size(); i++)
         {
             NameNode nn = fst.getNames().getName().get(i);
-            FwRegister reg = new FwRegister(nn.getController(), nn.isType(), nn.getUId(), nn.getFormat());
+            FwRegister reg = new FwRegister(nn.getController(), nn.isType(), nn.getUId(), nn.getFormat(),nn.getLenght());
             Monitor.globalName.put(reg.getKey(), nn.getName());
             tableDecode.add(reg);
         }

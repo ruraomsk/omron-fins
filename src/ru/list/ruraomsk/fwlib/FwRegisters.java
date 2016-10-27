@@ -5,46 +5,57 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-
 import java.util.Collection;
 import java.util.HashMap;
+
 /**
- * 
+ *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
 public class FwRegisters
 {
-    private HashMap<Long,FwRegister> dc=null;
+
+    private HashMap<Long, FwRegister> dc = null;
 
     public FwRegisters()
     {
-        dc=new HashMap(FwUtil.VALUE_UIDS);
+        dc = new HashMap(FwUtil.VALUE_UIDS);
     }
+
     public FwRegisters(int values)
     {
-        dc=new HashMap(values);
+        dc = new HashMap(values);
     }
-    
-    
-    public synchronized void add(FwRegister reg){
+
+    public synchronized void add(FwRegister reg)
+    {
         dc.put(reg.getKey(), reg);
-    } 
-    public FwRegister getRegister (int controller, int uId){
-        long key=FwRegister.makeKey(controller, uId, true);
+    }
+
+    public FwRegister getRegister(int controller, int uId)
+    {
+        long key = FwRegister.makeKey(controller, uId, true);
         return dc.get(key);
-    } 
-    public FwRegister getRegisterDiag (int controller, int uId){
-        long key=FwRegister.makeKey(controller, uId,false);
+    }
+
+    public FwRegister getRegisterDiag(int controller, int uId)
+    {
+        long key = FwRegister.makeKey(controller, uId, false);
         return dc.get(key);
-    } 
-    
-    public boolean isEmpty (){
+    }
+
+    public boolean isEmpty()
+    {
         return dc.isEmpty();
     }
-    public int getSize(){
+
+    public int getSize()
+    {
         return dc.size();
     }
-    public Collection<FwRegister> getCollection(){
+
+    public Collection<FwRegister> getCollection()
+    {
         return dc.values();
     }
 }

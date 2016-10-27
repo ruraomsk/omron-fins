@@ -14,10 +14,10 @@ class FwMesLive extends FwBaseMess
     private int controller;
     private int counter;
     private final byte functioncode=FwUtil.FP_CODE_64H;
-    FwMesLive(int controller){
-        this.controller=controller;
-        counter=0;
-    }
+//    FwMesLive(int controller){
+//        this.controller=controller;
+//        counter=0;
+//    }
     FwMesLive(int controller,int counter){
         this.controller=controller;
         this.counter=counter;

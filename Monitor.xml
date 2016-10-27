@@ -8,34 +8,30 @@ and open the template in the editor.
 
 <FwSpace>
     <names>
-        <name name="B01" controller="1" type="true" uId="1" format="0" />
-        <name name="B02" controller="1" type="true" uId="2" format="0" />
-        <name name="I01" controller="1" type="true" uId="3" format="1" />
-        <name name="I02" controller="1" type="true" uId="4" format="1" />
-        <name name="F01" controller="1" type="true" uId="5" format="2" />
-        <name name="F02" controller="1" type="true" uId="6" format="2" />
+        <name name="B01" controller="1" type="true" uId="1" format="0" lenght="2" />
+        <name name="B02" controller="1" type="true" uId="2" format="0" lenght="2" />
+        <name name="I01" controller="1" type="true" uId="3" format="1" lenght="2" />
+        <name name="I02" controller="1" type="true" uId="4" format="1" lenght="2" />
+        <name name="F01" controller="1" type="true" uId="5" format="2" lenght="4" />
+        <name name="F02" controller="1" type="true" uId="6" format="2" lenght="4" />
 
-        <name name="B03" controller="2" type="true" uId="101" format="0" />
-        <name name="B04" controller="2" type="true" uId="102" format="0" />
-        <name name="I03" controller="2" type="true" uId="103" format="1" />
-        <name name="I04" controller="2" type="true" uId="104" format="1" />
-        <name name="F03" controller="2" type="true" uId="105" format="2" />
-        <name name="F04" controller="2" type="true" uId="106" format="2" />
+        <name name="B03" controller="2" type="true" uId="101" format="0" lenght="2" />
+        <name name="B04" controller="2" type="true" uId="102" format="0" lenght="2" />
+        <name name="I03" controller="2" type="true" uId="103" format="1" lenght="2" />
+        <name name="I04" controller="2" type="true" uId="104" format="1" lenght="2" />
+        <name name="F03" controller="2" type="true" uId="105" format="2" lenght="4" />
+        <name name="F04" controller="2" type="true" uId="106" format="2" lenght="4" />
 
-        <name name="D01" controller="1" type="false" uId="11" format="1" />
-        <name name="D02" controller="1" type="false" uId="12" format="1" />
-        <name name="D11" controller="2" type="false" uId="21" format="1" />
-        <name name="D12" controller="2" type="false" uId="22" format="1" />
+        <name name="D01" controller="1" type="false" uId="11" format="1" lenght="2" />
+        <name name="D02" controller="1" type="false" uId="12" format="1" lenght="2" />
+        <name name="D11" controller="2" type="false" uId="21" format="1" lenght="2" />
+        <name name="D12" controller="2" type="false" uId="22" format="1" lenght="2" />
         
     </names>
     <devices>
         <device name="Slave01" controller="1" IPadr="none" port="5032" />
         <device name="Slave02" controller="2" IPadr="none" port="5033" />
         <device name="Master01" controller="1" IPadr="192.168.41.41" port="5032" />
-        <device name="Master11" controller="1" IPadr="192.168.41.41" port="5032" />
-        <device name="Master21" controller="1" IPadr="192.168.41.41" port="5032" />
         <device name="Master02" controller="2" IPadr="192.168.41.41" port="5033" />
-        <device name="Master12" controller="2" IPadr="192.168.41.41" port="5033" />
-        <device name="Master22" controller="2" IPadr="192.168.41.41" port="5033" />
     </devices>    
 </FwSpace>

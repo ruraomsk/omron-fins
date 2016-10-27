@@ -5,10 +5,8 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import java.util.Date;
-
 /**
- * 
+ *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
 public class FwRegister
@@ -16,28 +14,58 @@ public class FwRegister
 
     private int controller = 0;
     private int uId = 0;
-    private boolean info=true;
+    private boolean info = true;
     private int type = 0; // 0-bool  1-int  2-float
+    private int len = 1;
 
     public FwRegister(int controller, int uId, int type)
     {
         this.controller = controller;
         this.uId = uId;
         this.type = type;
+        if (type == FwUtil.FP_TYPE_FLOAT) {
+            this.len = 4;
+        }
+        if (type == FwUtil.FP_TYPE_INTGER) {
+            this.len = 2;
+        }
     }
-    public FwRegister(int controller,boolean diag ,int uId, int type)
+
+    public FwRegister(int controller, int uId, int type, int len)
     {
         this.controller = controller;
         this.uId = uId;
         this.type = type;
-        info=diag;
+        this.len = len;
     }
-    public boolean isDiag(){
+
+    public FwRegister(int controller, boolean diag, int uId, int type)
+    {
+        this.controller = controller;
+        this.uId = uId;
+        this.type = type;
+        info = diag;
+    }
+
+    public FwRegister(int controller, boolean diag, int uId, int type, int len)
+    {
+        this.controller = controller;
+        this.uId = uId;
+        this.type = type;
+        info = diag;
+        this.len = len;
+    }
+
+    public boolean isDiag()
+    {
         return !info;
     }
-    public boolean isInfo(){
+
+    public boolean isInfo()
+    {
         return info;
     }
+
     /**
      * @return the controller
      */
@@ -88,14 +116,34 @@ public class FwRegister
 
     public long getKey()
     {
-        return ((info?FwUtil.FP_FLAGINFO:0L)+((long) controller) << 16) + uId;
+        return ((info ? FwUtil.FP_FLAGINFO : 0L) + ((long) controller) << 16) + uId;
     }
-    public static long makeKey(int controller,int uId, boolean info){
-        return ((info?FwUtil.FP_FLAGINFO:0L)+((long) controller) << 16) + uId;
+
+    public static long makeKey(int controller, int uId, boolean info)
+    {
+        return ((info ? FwUtil.FP_FLAGINFO : 0L) + ((long) controller) << 16) + uId;
     }
+
+    @Override
     public String toString()
     {
-        return (Integer.toString(getController())+" "+(isInfo()?"И":"Д")+" uId="+Integer.toString(getuId())+" "+Integer.toString(getType()));
+        return (Integer.toString(getController()) + " " + (isInfo() ? "И" : "Д") + " uId=" + Integer.toString(getuId()) + " " + Integer.toString(getType()));
+    }
+
+    /**
+     * @return the len
+     */
+    public int getLen()
+    {
+        return len;
+    }
+
+    /**
+     * @param len the len to set
+     */
+    public void setLen(int len)
+    {
+        this.len = len;
     }
 
 }

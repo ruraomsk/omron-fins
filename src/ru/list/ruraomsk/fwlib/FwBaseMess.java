@@ -9,7 +9,7 @@ package ru.list.ruraomsk.fwlib;
  * Базовый класс для всех сообщений  
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-abstract class FwBaseMess
+public abstract class FwBaseMess
 {
 /**
  * 

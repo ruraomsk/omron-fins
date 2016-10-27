@@ -9,7 +9,7 @@ package ru.list.ruraomsk.fwlib;
  * Класс обработчик квитанций
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-class FwKvit extends FwBaseMess
+public class FwKvit extends FwBaseMess
 {
     private int controller;
     private byte[] mess=new byte[4];

@@ -8,37 +8,41 @@ package ru.list.ruraomsk.fwlib;
 import java.util.Date;
 
 /**
- * 
+ *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
 public class FwSyncTime extends FwBaseMess
 {
-    private int controller=0;
-    private Date datelast=null;
-    private Date datenow=null;
-    private final byte functioncode=FwUtil.FP_CODE_91H;
-    
+
+    private int controller = 0;
+    private Date datelast = null;
+    private Date datenow = null;
+    private final byte functioncode = FwUtil.FP_CODE_91H;
+
     /**
-     * конструктор приема 
-     * @param buffer 
+     * конструктор приема
+     *
+     * @param buffer
      */
-    FwSyncTime(int controller,Date datelast, Date datenow)
+    FwSyncTime(int controller, Date datelast, Date datenow)
     {
-        this.controller=controller;
-        this.datelast=datelast;
-        this.datenow=datenow;
+        this.controller = controller;
+        this.datelast = datelast;
+        this.datenow = datenow;
     }
-    
-    FwSyncTime(byte[] buffer,int controller)
+
+    FwSyncTime(byte[] buffer, int controller)
     {
-        this.controller=controller;
-        datelast=new Date(FwUtil.ToLong(buffer, 0));
-        datenow=new Date(FwUtil.ToLong(buffer, 8));
+        this.controller = controller;
+        datelast = new Date(FwUtil.ToLong(buffer, 0));
+        datenow = new Date(FwUtil.ToLong(buffer, 8));
     }
+
     @Override
-    public int toBuffer(byte[] buffer,int pos){
+    public int toBuffer(byte[] buffer, int pos)
+    {
         FwUtil.LongToBuff(buffer, pos, getDatelast().getTime());
-        FwUtil.LongToBuff(buffer, pos+8, getDatenow().getTime());
+        FwUtil.LongToBuff(buffer, pos + 8, getDatenow().getTime());
         return 16;
     }
 
@@ -72,5 +76,5 @@ public class FwSyncTime extends FwBaseMess
     {
         return functioncode;
     }
-    
+
 }

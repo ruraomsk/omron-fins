@@ -62,27 +62,22 @@ class FwInfo extends FwBaseMess
         int i;
         setValue(buffer, oreg);
 
-        for (i = 1; i < datas.size(); i++)
-        {
+        for (i = 1; i < datas.size(); i++) {
             oreg = datas.get(i);
-            if (oreg.getDate() != firstdate)
-            {
+            if (oreg.getDate() != firstdate) {
                 break;
             }
             kolvo++;
             setValue(buffer, oreg);
         }
-        if (kolvo == 0)
-        {
+        if (kolvo == 0) {
             return 0;
         }
         FwUtil.IntToBuff(buffer, tpos + 10, kolvo);
-        if (i == datas.size())
-        {
+        if (i == datas.size()) {
             return pos - tpos;
         }
-        do
-        {
+        do {
             oreg = datas.get(i);
             int temp = (int) (oreg.getDate().getTime() - firstdate.getTime());
             FwUtil.IntToBuff(buffer, pos, temp);
@@ -91,25 +86,21 @@ class FwInfo extends FwBaseMess
             pos += 2;
             Date tfirstdate = oreg.getDate();
             kolvo = 0;
-            do
-            {
+            do {
                 setValue(buffer, oreg);
                 kolvo++;
                 i++;
-                if (i >= datas.size())
-                {
+                if (i >= datas.size()) {
                     break;
                 }
                 oreg = (FwOneReg) datas.get(i);
-                if (tfirstdate != oreg.getDate())
-                {
+                if (tfirstdate != oreg.getDate()) {
                     break;
                 }
             }
             while (true);
             FwUtil.IntToBuff(buffer, spos, kolvo);
-            if (i >= datas.size())
-            {
+            if (i >= datas.size()) {
                 break;
             }
         }
@@ -121,20 +112,8 @@ class FwInfo extends FwBaseMess
     {
         FwUtil.IntToBuff(buffer, pos, oreg.getReg().getuId());
         pos += 2;
-        switch (oreg.getReg().getType())
-        {
-            case FwUtil.FP_TYPE_BOOL:
-                buffer[pos++] = (byte) (((boolean) oreg.getValue()) ? 0x1 : 0x0);
-                break;
-            case FwUtil.FP_TYPE_INTGER:
-                FwUtil.IntToBuff(buffer, pos, (int) oreg.getValue());
-                pos += 2;
-                break;
-            case FwUtil.FP_TYPE_FLOAT:
-                FwUtil.floatToBuff(buffer, pos, (float) oreg.getValue());
-                pos += 4;
-                break;
-        }
+        oreg.setBuffer(buffer, pos);
+        pos += oreg.getReg().getLen();
         buffer[pos++] = oreg.getGood();
     }
 
@@ -165,21 +144,18 @@ class FwInfo extends FwBaseMess
         //}
 
         int kolvo = FwUtil.ToShort(buffer, 10);
-        for (int i = 0; i < kolvo; i++)
-        {
+        for (int i = 0; i < kolvo; i++) {
             FwOneReg temp = getValue(buffer);
             temp.setDate(date);
             datas.add(temp);
         }
-        while (pos < len)
-        {
+        while (pos < len) {
             int addms = FwUtil.ToShort(buffer, pos);
             pos += 2;
             kolvo = FwUtil.ToShort(buffer, pos);
             pos += 2;
             ndate = new Date(date.getTime() + addms);
-            for (int i = 0; i < kolvo; i++)
-            {
+            for (int i = 0; i < kolvo; i++) {
                 FwOneReg temp = getValue(buffer);
                 temp.setDate(ndate);
                 datas.add(temp);
@@ -195,30 +171,15 @@ class FwInfo extends FwBaseMess
         pos += 2;
         FwOneReg temp = new FwOneReg();
         temp.setReg(tableDecode.getRegister(controller, uId));
-        if (temp.getReg() == null)
-        {
+        if (temp.getReg() == null) {
             FwUtil.textError = "not found " + Integer.toString(controller) + ":" + Integer.toString(uId);
             return null;
 
             //throw new IOException("not found " + Integer.toString((int) controller) + ":" + Integer.toString(uId));
         }
-        switch (temp.getReg().getType())
-        {
-            case FwUtil.FP_TYPE_BOOL:
-
-                temp.setValue((buffer[pos++] != 0) ? true : false);
-                break;
-            case FwUtil.FP_TYPE_INTGER:
-                temp.setValue(FwUtil.ToShort(buffer, pos));
-                pos += 2;
-                break;
-            case FwUtil.FP_TYPE_FLOAT:
-                temp.setValue(FwUtil.ToFloat(buffer, pos));
-                pos += 4;
-                break;
-        }
-        temp.setGood(buffer[pos]);
-        pos++;
+        temp.getBuffer(buffer, pos);
+        pos += temp.getReg().getLen();
+        temp.setGood(buffer[pos++]);
         return temp;
     }
 
@@ -249,8 +210,7 @@ class FwInfo extends FwBaseMess
      */
     public boolean addOneReg(FwOneReg value)
     {
-        if (isFull())
-        {
+        if (isFull()) {
             return false;
         }
         datas.add(value);
@@ -263,11 +223,10 @@ class FwInfo extends FwBaseMess
      */
     public boolean isFull()
     {
-        if (datas.size() > MAX_SIZE)
-        {
+        if (datas.size() > MAX_SIZE) {
             return true;
-        } else
-        {
+        }
+        else {
             return false;
         }
     }

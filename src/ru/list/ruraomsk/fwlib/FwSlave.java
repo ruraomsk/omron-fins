@@ -10,52 +10,51 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * 
+ *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
 public class FwSlave extends Thread
 {
+
     private int port;
-    private int count=0;
-    private String type="SL:";
+    private int count = 0;
+    private String type = "SL:";
 
     public FwSlave(int port)
     {
         this.port = port;
         start();
     }
+
     @Override
     public void run()
     {
         ServerSocket slave = null;
-        try
-        {
+        try {
             slave = new ServerSocket(this.port);
-            while (!Thread.interrupted())
-            {
+            while (!Thread.interrupted()) {
                 Socket insc = slave.accept();
-                String name=type+Integer.toString(port)+"-"+Integer.toString(count++);
-                FwSlaveListner sdev=new  FwSlaveListner(name,port,insc);
+                String name = type + Integer.toString(port) + "-" + Integer.toString(count++);
+                FwSlaveListner sdev = new FwSlaveListner(name, port, insc);
                 sdev.startListner();
-                if(FwUtil.FP_DEBUG) System.err.println("Запущен "+name);
+                if (FwUtil.FP_DEBUG) {
+                    System.err.println("Запущен " + name);
+                }
             }
         }
-        catch (IOException ex)
-        {
-            if(FwUtil.FP_DEBUG) System.err.println("Ошибка FwSlave "+ex.getMessage());
+        catch (IOException ex) {
+            if (FwUtil.FP_DEBUG) {
+                System.err.println("Ошибка FwSlave " + ex.getMessage());
+            }
         }
-        finally
-        {
-            try
-            {
+        finally {
+            try {
                 slave.close();
             }
-            catch (IOException ex)
-            {
+            catch (IOException ex) {
             }
         }
-        
-    }
 
+    }
 
 }

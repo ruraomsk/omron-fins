@@ -5,11 +5,10 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import java.io.IOException;
 import java.net.Socket;
 
 /**
- * 
+ *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
 class FwSlaveListner extends Thread
@@ -37,8 +36,7 @@ class FwSlaveListner extends Thread
     private void registration()
     {
         mydevice = FwUtil.S_DEV.get(port);
-        if (mydevice == null)
-        {
+        if (mydevice == null) {
             //System.out.println(name + " not exist device on port:" + port.toString());
             return;
         }
@@ -55,12 +53,10 @@ class FwSlaveListner extends Thread
 
     public boolean startListner()
     {
-        if (!ready)
-        {
+        if (!ready) {
             return false;
         }
-        if (!myTransport.connect())
-        {
+        if (!myTransport.connect()) {
             mySlave.disconnect();
             return false;
         }
@@ -72,28 +68,26 @@ class FwSlaveListner extends Thread
     public void run()
     {
         FwMessage message = null;
-        FwResponse resp=null;
-        while (!Thread.interrupted())
-        {
-            try
-            {
-                    while ((message = mySlave.getMessage()) != null)
-                    {
-                        //System.out.println("Lister transfered");
-                        myTransport.writeMessage(message);
-                    }
-                    error=0;
-                resp=myTransport.readMessage();
-                while (resp!=null){
+        FwResponse resp = null;
+        while (!Thread.interrupted()) {
+            try {
+                while ((message = mySlave.getMessage()) != null) {
+                    //System.out.println("Lister transfered");
+                    myTransport.writeMessage(message);
+                }
+                error = 0;
+                resp = myTransport.readMessage();
+                while (resp != null) {
                     //System.out.println("Add response");
                     mySlave.addResponse(resp);
-                    resp=myTransport.readMessage();
+                    resp = myTransport.readMessage();
                 }
                 Thread.sleep(stepTime);
             }
-            catch (InterruptedException ex)
-            {
-                if(FwUtil.FP_DEBUG) System.err.println("FwSlaveListner "+ex.getMessage());
+            catch (InterruptedException ex) {
+                if (FwUtil.FP_DEBUG) {
+                    System.err.println("FwSlaveListner " + ex.getMessage());
+                }
                 mySlave.disconnect();
                 myTransport.close();
             }

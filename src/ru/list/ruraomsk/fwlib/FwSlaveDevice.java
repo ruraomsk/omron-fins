@@ -5,7 +5,6 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,6 +18,10 @@ public class FwSlaveDevice extends Thread
 
     public ConcurrentHashMap<String, SlaveListner> listners = null;
     private ConcurrentHashMap<Long, FwOneReg> data = null;
+
+    private ConcurrentLinkedQueue<FwBaseMess> inmessages;
+    private ConcurrentLinkedQueue<FwBaseMess> outmessages;
+
     private int port;
     private int controller;
     public int nomerinfo = 1;
@@ -30,9 +33,12 @@ public class FwSlaveDevice extends Thread
     public int error = 0;
     public Date lastsync = new Date();
     public Date lastdiag = new Date();
+    private String UPCMessage = "";
 
     public FwSlaveDevice(int port, int controller, FwRegisters tableDecode)
     {
+        this.inmessages = new ConcurrentLinkedQueue<>();
+        this.outmessages = new ConcurrentLinkedQueue<>();
         this.port = port;
         this.controller = controller;
         this.tableDecode = tableDecode;
@@ -40,10 +46,8 @@ public class FwSlaveDevice extends Thread
         listners = new ConcurrentHashMap<>();
         data = new ConcurrentHashMap<>(FwUtil.VALUE_UIDS);
         FwUtil.S_DEV.put(port, this);
-        for (FwRegister reg : tableDecode.getCollection())
-        {
-            if ((reg.getController() == controller))
-            {
+        for (FwRegister reg : tableDecode.getCollection()) {
+            if ((reg.getController() == controller)) {
                 FwOneReg onereg = new FwOneReg(new Date(), reg);
                 data.put(reg.getKey(), onereg);
             }
@@ -58,28 +62,28 @@ public class FwSlaveDevice extends Thread
     public void run()
     {
         FwResponse resp = null;
-        while (!Thread.interrupted())
-        {
-            try
-            {
-                for (SlaveListner sl : listners.values())
-                {
+        while (!Thread.interrupted()) {
+            try {
+                for (SlaveListner sl : listners.values()) {
                     sl.notLive();
-                    while ((resp = sl.getResponse()) != null)
-                    {
-                        if (resp.getController() != getController())
-                        {
+                    while ((resp = sl.getResponse()) != null) {
+                        if (resp.getController() != getController()) {
                             error++;
                             continue;
                         }
-                        switch (resp.getFunctionCode())
-                        {
+                        switch (resp.getFunctionCode()) {
                             case FwUtil.FP_CODE_10H:
+                                outmessages.add(resp.getMesCtrl());
                                 doCtrl(resp.getMesCtrl());
                                 break;
                             case FwUtil.FP_CODE_34H:
+                            case FwUtil.FP_CODE_36H:
                                 // принять настроечные данные
-                                doSetup(resp.getOtvet());
+                                outmessages.add(resp.getSetup());
+                                break;
+                            case FwUtil.FP_CODE_35H:
+                                // принять команды
+                                outmessages.add(resp.getKvit());
                                 break;
                             case FwUtil.FP_CODE_64H:
                                 // master is live))
@@ -87,19 +91,24 @@ public class FwSlaveDevice extends Thread
                                 break;
                         }
                     }
+
                 }
+                FwBaseMess message;
+                while ((message = inmessages.poll()) != null) {
+                    for (SlaveListner sl : listners.values()) {
+                        sl.addMessage(new FwMessage(message));
+                    }
+                }
+
                 Date dd = new Date();
-                if ((dd.getTime() - lastdiag.getTime()) > FwUtil.FP_STEP_DIAG)
-                {
+                if ((dd.getTime() - lastdiag.getTime()) > FwUtil.FP_STEP_DIAG) {
                     sendDiag();
                     lastdiag = dd;
                 }
                 Thread.sleep(stepTime);
             }
-            catch (InterruptedException ex)
-            {
-                if (FwUtil.FP_DEBUG)
-                {
+            catch (InterruptedException ex) {
+                if (FwUtil.FP_DEBUG) {
                     System.err.println("FwSlaveDevice ошибка " + ex.getMessage());
                 }
                 //myTransport.close();
@@ -126,8 +135,7 @@ public class FwSlaveDevice extends Thread
     public Object getCode(int uId)
     {
         long key = FwRegister.makeKey(controller, uId, false);
-        if (data.get(key) == null)
-        {
+        if (data.get(key) == null) {
             return null;
         }
         return data.get(key).getValue();
@@ -137,8 +145,7 @@ public class FwSlaveDevice extends Thread
     {
         long key = FwRegister.makeKey(controller, uId, false);
         FwOneReg t = data.get(key);
-        if (t == null)
-        {
+        if (t == null) {
             return;
         }
         t.setDate(new Date());
@@ -150,8 +157,7 @@ public class FwSlaveDevice extends Thread
     public Object getValue(int uId)
     {
         long key = FwRegister.makeKey(controller, uId, true);
-        if (data.get(key) == null)
-        {
+        if (data.get(key) == null) {
             return null;
         }
         return data.get(key).getValue();
@@ -192,10 +198,8 @@ public class FwSlaveDevice extends Thread
 
     private void loadAllValues()
     {
-        for (FwOneReg oreg : data.values())
-        {
-            if (oreg.getReg().isInfo())
-            {
+        for (FwOneReg oreg : data.values()) {
+            if (oreg.getReg().isInfo()) {
                 appendToInfo(oreg);
             }
         }
@@ -203,8 +207,7 @@ public class FwSlaveDevice extends Thread
 
     private void appendToInfo(FwOneReg oreg)
     {
-        if (info.isFull())
-        {
+        if (info.isFull()) {
             sendAll(info);
             info = new FwInfo(getController(), nomerinfo++);
             changeAllDate();
@@ -217,13 +220,12 @@ public class FwSlaveDevice extends Thread
     public void sendDiag()
     {
         FwDiag mesd = new FwDiag(controller, tableDecode);
-        for (FwOneReg dreg : data.values())
-        {
-            if (dreg.getReg().isDiag())
-            {
+        for (FwOneReg dreg : data.values()) {
+            if (dreg.getReg().isDiag()) {
                 mesd.setOneDiag(dreg.getuId(), (int) dreg.getValue());
             }
         }
+        mesd.setUPCMessage(UPCMessage);
         nomerdiag++;
         sendAll(mesd);
     }
@@ -231,10 +233,8 @@ public class FwSlaveDevice extends Thread
     private void sendAll(FwBaseMess message)
     {
         //System.out.println("Storage all...");
-        for (SlaveListner sl : listners.values())
-        {
-            if (sl.isconnected())
-            {
+        for (SlaveListner sl : listners.values()) {
+            if (sl.isconnected()) {
                 sl.addMessage(new FwMessage(message));
                 //System.out.println("Send full info message...");
                 error = 0;
@@ -246,18 +246,15 @@ public class FwSlaveDevice extends Thread
     {
         Date date = new Date();
 
-        for (FwOneReg oreg : data.values())
-        {
+        for (FwOneReg oreg : data.values()) {
             oreg.setDate(date);
         }
     }
 
     private void doCtrl(FwMesCtrl message)
     {
-        if (message.getCommandcode() == FwUtil.FP_CTRL_ALLINFO)
-        {
-            if (info.getSize() != 0)
-            {
+        if (message.getCommandcode() == FwUtil.FP_CTRL_ALLINFO) {
+            if (info.getSize() != 0) {
                 sendAll(info);
                 info = new FwInfo(getController(), nomerinfo++);
             }
@@ -266,19 +263,12 @@ public class FwSlaveDevice extends Thread
             sendAll(info);
             info = new FwInfo(getController(), nomerinfo++);
         }
-        if (message.getCommandcode() == FwUtil.FP_CTRL_TESTSYNC)
-        {
+        if (message.getCommandcode() == FwUtil.FP_CTRL_TESTSYNC) {
             Date now = new Date();
             FwSyncTime temp = new FwSyncTime(getController(), lastsync, now);
             lastsync = now;
             sendAll(temp);
         }
-    }
-
-    private void doSetup(FwSetup otvet)
-    {
-
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     /**
@@ -287,6 +277,21 @@ public class FwSlaveDevice extends Thread
     public int getController()
     {
         return controller;
+    }
+
+    public void setUPCMessage(String UPCMessage)
+    {
+        this.UPCMessage = UPCMessage;
+    }
+
+    public void putMessage(FwBaseMess message)
+    {
+        inmessages.add(message);
+    }
+
+    public FwBaseMess readMessage()
+    {
+        return outmessages.poll();
     }
 
 }

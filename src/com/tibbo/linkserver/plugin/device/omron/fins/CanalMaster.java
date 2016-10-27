@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import ru.list.ruraomsk.fwlib.FwBaseMess;
 import ru.list.ruraomsk.fwlib.FwMasterDevice;
 import ru.list.ruraomsk.fwlib.FwOneReg;
 import ru.list.ruraomsk.fwlib.FwRegisters;
@@ -26,46 +27,45 @@ public class CanalMaster
     private FwRegisters tableDecode = null;
     public ArrayList<FwMasterDevice> mdarray = new ArrayList<>();
     private ArrayList<Socket> socketarray = new ArrayList<>();
-    private long timeout=20000L;
+    private long timeout = 20000L;
+
     public CanalMaster(int controller, FwRegisters tableDecode, long timeout)
     {
         this.controller = controller;
         this.tableDecode = tableDecode;
-        this.timeout=timeout;
+        this.timeout = timeout;
     }
 
-    public void addDevice(Socket socket)
+    public FwMasterDevice addDevice(Socket socket)
     {
-        try
-        {
+        try {
             socket.setSoTimeout((int) timeout);
             socketarray.add(socket);
             FwMasterDevice md = new FwMasterDevice(socket, controller, tableDecode);
             workCanal = md;
             mdarray.add(md);
+            return md;
         }
-        catch (SocketException ex)
-        {
-            Log.CORE.info("Set timeOut "+ex);
+        catch (SocketException ex) {
+            Log.CORE.info("Set timeOut " + ex);
+            return null;
         }
     }
+
     public void reconnectDevice(int idx)
     {
-        try
-        {
+        try {
             //Log.CORE.info("Создаем заново ");
             Socket socket = new Socket(socketarray.get(idx).getInetAddress(), socketarray.get(idx).getPort());
             socket.setSoTimeout((int) timeout);
             FwMasterDevice md = new FwMasterDevice(socket, controller, tableDecode);
-            if(md==null) return;
             workCanal = md;
             //Log.CORE.info("Создали заново "+md.myAddress());
             socketarray.set(idx, socket);
             mdarray.set(idx, md);
         }
-        catch (IOException ex)
-        {
-            Log.CORE.info("Reconect "+ex);
+        catch (IOException ex) {
+            Log.CORE.info("Reconect " + ex);
         }
     }
 
@@ -77,9 +77,8 @@ public class CanalMaster
         {
             Log.CORE.info("=======================");
         }
-        */
-        for (FwMasterDevice master : mdarray)
-        {
+         */
+        for (FwMasterDevice master : mdarray) {
             /*
             if (FwUtil.FP_DEBUG)
             {
@@ -94,9 +93,8 @@ public class CanalMaster
             {
                 Log.CORE.info(FwUtil.textError);
             }
-            */
-            if (master.isConnected())
-            {
+             */
+            if (master.isConnected()) {
                 workCanal = master;
             }
         }
@@ -108,14 +106,13 @@ public class CanalMaster
                 Log.CORE.info(reg.toString());
             }
         }
-        */
+         */
 
     }
 
     public String nameWorkCanal()
     {
-        if (workCanal == null)
-        {
+        if (workCanal == null) {
             return null;
         }
         return workCanal.myAddress();
@@ -123,18 +120,44 @@ public class CanalMaster
 
     public void clearDatas()
     {
-        for (FwMasterDevice master : mdarray)
-        {
+        for (FwMasterDevice master : mdarray) {
             while (master.getHistory() != null);
         }
     }
 
     public FwOneReg getHistory()
     {
-        if (workCanal == null)
-        {
+        if (workCanal == null) {
             return null;
         }
         return workCanal.getHistory();
+    }
+
+    public String getUPCMessage()
+    {
+        if (workCanal == null) {
+            return null;
+        }
+        return workCanal.getUPCMessage();
+    }
+
+    public FwBaseMess readMessage()
+    {
+        if (workCanal == null) {
+            return null;
+        }
+        return workCanal.readMessage();
+    }
+
+    public void putMessage(FwBaseMess message)
+    {
+        for (FwMasterDevice master : mdarray) {
+            if (master.isConnected()) {
+                master.putMessage(message);
+            }
+        }
+    }
+    public int getController(){
+        return controller;
     }
 }

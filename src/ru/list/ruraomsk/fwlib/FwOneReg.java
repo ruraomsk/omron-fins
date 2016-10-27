@@ -42,8 +42,7 @@ public class FwOneReg
     {
         this.date = date.getTime();
         this.reg = reg;
-        switch (reg.getType())
-        {
+        switch (reg.getType()) {
             case FwUtil.FP_TYPE_BOOL:
                 this.value = false;
                 break;
@@ -55,11 +54,14 @@ public class FwOneReg
                 break;
         }
     }
+
+    @Override
     public String toString()
     {
-        return (new Date(date).toString()+" "+(reg.isInfo()?"И":"Д")+" uId="+Integer.toString(reg.getuId())
-                +" value="+value.toString()+" good=0x"+Integer.toHexString(good));
+        return (new Date(date).toString() + " " + (reg.isInfo() ? "И" : "Д") + " uId=" + Integer.toString(reg.getuId())
+                + " value=" + value.toString() + " good=0x" + Integer.toHexString(good));
     }
+
     /**
      * @return the date
      */
@@ -127,5 +129,70 @@ public class FwOneReg
     public int getuId()
     {
         return reg.getuId();
+    }
+
+    void setBuffer(byte[] buffer, int pos)
+    {
+        switch (getReg().getType()) {
+            case FwUtil.FP_TYPE_BOOL:
+                if (getReg().getLen() == 1) {
+                    buffer[pos] = (byte) (((boolean) getValue()) ? 0x1 : 0x0);
+                    break;
+                }
+                if (getReg().getLen() == 2) {
+                    FwUtil.IntToBuff(buffer, pos, ((boolean) getValue()) ? 0x1 : 0x0);
+                    break;
+                }
+                if (getReg().getLen() == 4) {
+                    FwUtil.floatToBuff(buffer, pos, (boolean) getValue() ? 1.0f : 0.0f);
+                    break;
+                }
+
+            case FwUtil.FP_TYPE_INTGER:
+                if (getReg().getLen() == 2) {
+                    FwUtil.IntToBuff(buffer, pos, (int) getValue());
+                    break;
+                }
+                if (getReg().getLen() == 4) {
+                    FwUtil.floatToBuff(buffer, pos, (int) getValue());
+                    break;
+                }
+            case FwUtil.FP_TYPE_FLOAT:
+                FwUtil.floatToBuff(buffer, pos, (float) getValue());
+                break;
+        }
+    }
+
+    void getBuffer(byte[] buffer, int pos)
+    {
+        switch (getReg().getType()) {
+            case FwUtil.FP_TYPE_BOOL:
+                if (getReg().getLen() == 1) {
+                    setValue((buffer[pos] != 0));
+                    break;
+                }
+                if (getReg().getLen() == 2) {
+                    setValue((FwUtil.ToShort(buffer, pos) != 0));
+                    break;
+                }
+                if (getReg().getLen() == 4) {
+                    setValue(FwUtil.ToFloat(buffer, pos) != 0.0);
+                    break;
+                }
+
+            case FwUtil.FP_TYPE_INTGER:
+                if (getReg().getLen() == 2) {
+                    setValue(FwUtil.ToShort(buffer, pos));
+                    break;
+                }
+                if (getReg().getLen() == 4) {
+                    setValue((int) FwUtil.ToFloat(buffer, pos));
+                    break;
+                }
+
+            case FwUtil.FP_TYPE_FLOAT:
+                setValue(FwUtil.ToFloat(buffer, pos));
+                break;
+        }
     }
 }
