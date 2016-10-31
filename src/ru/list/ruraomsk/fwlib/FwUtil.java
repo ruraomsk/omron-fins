@@ -137,12 +137,28 @@ public class FwUtil
                 | (long) (bytes[idx + 3] & 0xff) << 24 | (long) (bytes[idx + 2] & 0xff) << 16
                 | (long) (bytes[idx + 1] & 0xff) << 8 | (long) (bytes[idx] & 0xff);
     }
+    public static final long ToTime(byte bytes[], int idx)
+    {
+        return (long) (bytes[idx + 3] & 0xff) << 56 | (long) (bytes[idx + 2] & 0xff) << 48
+                | (long) (bytes[idx + 1] & 0xff) << 40 | (long) (bytes[idx + 0] & 0xff) << 32
+                | (long) (bytes[idx + 7] & 0xff) << 24 | (long) (bytes[idx + 6] & 0xff) << 16
+                | (long) (bytes[idx + 5] & 0xff) << 8 | (long) (bytes[idx + 4] & 0xff);
+    }
+
+    public static byte getVersion(){
+        return 0x21;
+    }
     public static boolean FP_DEBUG = true;
     public static int MAX_LEN = 64000;
     public static int MIN_LEN = 1;
     public static int VALUE_UIDS = 1000;     // Примерное колличество переменных на устройстве
     public static String textError = "Not Error!";
     public static final byte FP_CODE_INFO = 1;
+
+    public static final byte FP_CODE_DISCR = 3;   // включить имитатор дискрета 
+    public static final byte FP_CODE_ANALOG = 4;  // включить имитатор аналоговых сигналов
+    
+    
     public static final byte FP_CODE_34H = 0x34;    //Передача настроечных данных по инициативе серверов уровня 2 или запрос о настроечных данных в контроллере
     public static final byte FP_CODE_35H = 0x35;     //Квитирование полученных настроечных данных
     public static final byte FP_CODE_36H = 0x36;    //Передача настроечных данных из контроллера на серверы уровня 2 по запросу поступившему от серверов уровня 2
@@ -162,7 +178,9 @@ public class FwUtil
     static final int FP_CTRL_RESTART = 5;     //перезагрузка контроллера (код 5);
     static final int FP_CTRL_TESTSYNC = 6;    //проверка синхронизации (код 6);
     static final int FP_CTRL_GOOD = 7;        //проверка целостности программного обеспечения (ПО) (код 7).
-
+    static final int FP_CTRL_ALL = 8;         //установить новый период отправки информации о состоянии всех сигналов контроллера в циклах (примероно по 10мс)
+    static final int FP_CYCLE_CONTRL = 10;     //  цикл контроллера в мс
+    
     static final long FP_STEP_TIME = 500L;   // стандартная временная задерка для потоков
     static final long FP_STEP_DIAG = 10000L;  // стандартная временная задерка для отправки состояния диагностики
     static final long FP_STEP_GIVEME = 10000L;  // стандартная временная задерка для отправки всех значений инфо

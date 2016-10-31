@@ -21,46 +21,48 @@ public class FwResponse
 
     FwResponse(int controller, byte functionCode, int len, byte[] buffer, FwRegisters tableDecode)
     {
-        this.controller = controller;
-        this.functionCode = functionCode;
+        try {
+            this.controller = controller;
+            this.functionCode = functionCode;
 
+            switch (functionCode) {
+                case FwUtil.FP_CODE_INFO:
+                    info = new FwInfo(len, buffer, controller, tableDecode);
+                    break;
+                case FwUtil.FP_CODE_35H:
 
-        switch (functionCode) {
-            case FwUtil.FP_CODE_INFO:
-                info = new FwInfo(len, buffer, controller, tableDecode);
-                break;
-            case FwUtil.FP_CODE_35H:
-                
-                info = new FwKvit(buffer, controller);
+                    info = new FwKvit(buffer, controller);
 //                System.err.println("FwResponse Kvit controller="+Integer.toString(controller));
-                break;
-            case FwUtil.FP_CODE_34H:
+                    break;
+                case FwUtil.FP_CODE_34H:
 //              byte[] b=new byte[len];
 //              System.arraycopy(buffer, 0, b, 0, len);
 //              System.err.println("FwResponse"+Arrays.toString(b));
-                info = new FwSetup(true, len, buffer, controller);
-                break;
-            case FwUtil.FP_CODE_36H:
-                info = new FwSetup(false, len, buffer, controller);
-                break;
-            case FwUtil.FP_CODE_30H:
-                info = new FwDiag(len, buffer, controller, tableDecode);
-                break;
-            case FwUtil.FP_CODE_64H:
-                info = new FwMesLive(buffer, controller);
-                break;
-            case FwUtil.FP_CODE_91H:
-                info = new FwSyncTime(buffer, controller);
-                break;
-            case FwUtil.FP_CODE_10H:
-                info = new FwMesCtrl(buffer, controller);
-                break;
-            default: {
-                if (FwUtil.FP_DEBUG) {
-                    System.err.println("Bad function code.");
+                    info = new FwSetup(true, len, buffer, controller);
+                    break;
+                case FwUtil.FP_CODE_36H:
+                    info = new FwSetup(false, len, buffer, controller);
+                    break;
+                case FwUtil.FP_CODE_30H:
+                    info = new FwDiag(len, buffer, controller, tableDecode);
+                    break;
+                case FwUtil.FP_CODE_64H:
+                    info = new FwMesLive(buffer, controller);
+                    break;
+                case FwUtil.FP_CODE_91H:
+                    info = new FwSyncTime(buffer, controller);
+                    break;
+                case FwUtil.FP_CODE_10H:
+                    info = new FwMesCtrl(buffer, controller);
+                    break;
+                default: {
+                    System.err.println("Bad function code=" + Integer.toString(functionCode));
+                    //throw new IOException("Bad function code."+Integer.toString(this.getFunctionCode()));
                 }
-                //throw new IOException("Bad function code."+Integer.toString(this.getFunctionCode()));
             }
+        }
+        catch (Exception ex) {
+            System.err.println("FwResponce error " + ex.getMessage());
         }
     }
 

@@ -30,28 +30,6 @@ class FwMessage
                 int len = 0;
                 FwUtil.IntToBuff(FwUtil.outbuf, 2, message.getController());
                 FwUtil.outbuf[4] = message.getFunctionCode();
-                switch (message.getFunctionCode()) {
-                    case FwUtil.FP_CODE_64H:
-                        break;
-                    case FwUtil.FP_CODE_10H:
-                        break;
-                    case FwUtil.FP_CODE_34H:
-                        break;
-                    case FwUtil.FP_CODE_35H:
-                        break;
-                    case FwUtil.FP_CODE_36H:
-                        break;
-                    case FwUtil.FP_CODE_30H:
-                        break;
-                    case FwUtil.FP_CODE_INFO:
-                        break;
-                    case FwUtil.FP_CODE_91H:
-                        break;
-
-                    default:
-                        return;
-
-                }
                 len = message.toBuffer(FwUtil.outbuf, 5);
                 FwUtil.IntToBuff(FwUtil.outbuf, 0, len);
                 int crc = FwUtil.Crc(FwUtil.outbuf, 0, len + 5);

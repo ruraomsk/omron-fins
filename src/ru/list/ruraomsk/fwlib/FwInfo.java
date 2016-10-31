@@ -7,8 +7,9 @@ package ru.list.ruraomsk.fwlib;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-
+import org.apache.commons.net.ntp.TimeStamp;
 /**
  * Класс для хранения значений переменных сообщений 1h.
  *
@@ -115,6 +116,8 @@ class FwInfo extends FwBaseMess
         oreg.setBuffer(buffer, pos);
         pos += oreg.getReg().getLen();
         buffer[pos++] = oreg.getGood();
+        // АППЕРТУРА
+        pos+=2;
     }
 
     /**
@@ -128,41 +131,53 @@ class FwInfo extends FwBaseMess
      */
     public FwInfo(int len, byte[] buffer, int controller, FwRegisters tableDecode)
     {
-        Date date = null, ndate = null;
-        date = new Date(FwUtil.ToLong(buffer, 0));
-        nomer = FwUtil.ToShort(buffer, 8);
-        pos = 12;
-        this.controller = controller;
-        this.tableDecode = tableDecode;
-        FwUtil.textError = "";
-        //for (FwRegister reg : tableDecode.getCollection())
-        //{
-        //    if (FwUtil.FP_DEBUG)
-        //    {
-        //        FwUtil.textError += reg.toString() + "/ ";
-        //    }
-        //}
+        try {
+//            byte[] buf = new byte[len];
+//            System.arraycopy(buffer, 0, buf, 0, len);
+//            System.err.println("Buffer=" + Arrays.toString(buf));
+            Date date = null, ndate = null;
+            TimeStamp ts=new TimeStamp(FwUtil.ToTime(buffer, 0));
+            date = new Date(ts.getTime());
+            nomer = FwUtil.ToShort(buffer, 8);
+            pos = 12;
+            this.controller = controller;
+            this.tableDecode = tableDecode;
+            FwUtil.textError = "";
+            //for (FwRegister reg : tableDecode.getCollection())
+            //{
+            //    if (FwUtil.FP_DEBUG)
+            //    {
+            //        FwUtil.textError += reg.toString() + "/ ";
+            //    }
+            //}
 
-        int kolvo = FwUtil.ToShort(buffer, 10);
-        for (int i = 0; i < kolvo; i++) {
-            FwOneReg temp = getValue(buffer);
-            temp.setDate(date);
-            datas.add(temp);
-        }
-        while (pos < len) {
-            int addms = FwUtil.ToShort(buffer, pos);
-            pos += 2;
-            kolvo = FwUtil.ToShort(buffer, pos);
-            pos += 2;
-            ndate = new Date(date.getTime() + addms);
+            int kolvo = FwUtil.ToShort(buffer, 10);
             for (int i = 0; i < kolvo; i++) {
                 FwOneReg temp = getValue(buffer);
-                temp.setDate(ndate);
-                datas.add(temp);
+                temp.setDate(date);
+                if (temp.getReg() != null) {
+                    datas.add(temp);
+                }
             }
+            while (pos < len) {
+                int addms = FwUtil.ToShort(buffer, pos);
+                pos += 2;
+                kolvo = FwUtil.ToShort(buffer, pos);
+                pos += 2;
+                ndate = new Date(date.getTime() + addms);
+                for (int i = 0; i < kolvo; i++) {
+                    FwOneReg temp = getValue(buffer);
+                    temp.setDate(ndate);
+                    if (temp.getReg() != null) {
+                        datas.add(temp);
+                    }
+                }
 
+            }
         }
-
+        catch (Exception ex) {
+            System.err.println("FwInfo error " + ex.getMessage());
+        }
     }
 
     private FwOneReg getValue(byte[] buffer)
@@ -172,14 +187,17 @@ class FwInfo extends FwBaseMess
         FwOneReg temp = new FwOneReg();
         temp.setReg(tableDecode.getRegister(controller, uId));
         if (temp.getReg() == null) {
-            FwUtil.textError = "not found " + Integer.toString(controller) + ":" + Integer.toString(uId);
-            return null;
-
-            //throw new IOException("not found " + Integer.toString((int) controller) + ":" + Integer.toString(uId));
+            System.err.println("not found " + Integer.toString(controller) + ":" + Integer.toString(uId));
+            pos += 2;
         }
-        temp.getBuffer(buffer, pos);
-        pos += temp.getReg().getLen();
+        else {
+            temp.getBuffer(buffer, pos);
+            pos += temp.getReg().getLen();
+
+        }
         temp.setGood(buffer[pos++]);
+        //     АПЕРТУРА!!!!!!!    
+        pos += 2;
         return temp;
     }
 

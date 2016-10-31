@@ -9,33 +9,34 @@ package ru.list.ruraomsk.fwlib;
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-public class FwMesCtrl extends FwBaseMess
+public class FwSimul extends FwBaseMess
 {
 
     private int controller;
-    private byte commandcode;
+    private byte commandcode=0;
     private byte good;
     private parameter[] params = new parameter[7];
-    private final byte functioncode = FwUtil.FP_CODE_10H;
+    private byte functioncode = FwUtil.FP_CODE_DISCR;
 
     /**
      * Создание сообщения
      *
      * @param commandcode
      */
-public FwMesCtrl(int controller, int commandcode)
+public FwSimul (int controller, int commandcode)
     {
         this.controller = controller;
-        this.commandcode = (byte) (commandcode & 0xff);
+        this.functioncode = (byte) (commandcode & 0xff);
         this.good = FwUtil.FP_DATA_GOOD;
         for (int i = 0; i < 7; i++) {
             params[i] = new parameter();
         }
     }
 
-    FwMesCtrl(byte[] buffer, int controller)
+    FwSimul(byte[] buffer, int controller,byte functioncode)
     {
         this.controller = controller;
+        this.functioncode=functioncode;
         int pos = 0;
         commandcode = buffer[pos++];
         good = buffer[pos++];
@@ -111,6 +112,7 @@ public FwMesCtrl(int controller, int commandcode)
 
         int par = 0;
         byte good = FwUtil.FP_DATA_GOOD;
+
     }
 
     @Override

@@ -5,6 +5,7 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Date;
@@ -39,7 +40,7 @@ public class FwMasterDevice extends Thread
     private byte errFuncCode = 0;
     private long lastGiveMe = new Date().getTime();
     private long lastLive = new Date().getTime();
-    private String UPCMessage="";
+    private String UPCMessage = "";
 
     public FwMasterDevice(Socket socket, int controller, FwRegisters tableDecode)
     {
@@ -107,43 +108,70 @@ public class FwMasterDevice extends Thread
     {
         return socket.getInetAddress().getHostAddress() + ":" + Integer.toString(socket.getPort());
     }
-    public String myIP(){
+
+    public String myIP()
+    {
         return socket.getInetAddress().getHostAddress();
     }
-    public int myPort(){
+
+    public int myPort()
+    {
         return socket.getPort();
     }
 
     @Override
     public void run()
     {
-        FwMesCtrl givemeAll = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALLINFO);
-        sendMessage(givemeAll);
+        try {
+//            FwSimul setSimul = new FwSimul(controller, FwUtil.FP_CODE_DISCR);
+//            sendMessage(setSimul);
+//            Thread.sleep(stepTime);
+
+//            setSimul = new FwSimul(controller, FwUtil.FP_CODE_ANALOG);
+//            sendMessage(setSimul);
+//            Thread.sleep(stepTime);
+            FwMesCtrl givemeAll = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALLINFO);
+            sendMessage(givemeAll);
+            Thread.sleep(stepTime);
+
+            FwMesCtrl setPeriod = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALL);
+            setPeriod.setPar(5, (int) (stepGiveMe / FwUtil.FP_CYCLE_CONTRL));
+            sendMessage(setPeriod);
+            Thread.sleep(stepTime);
+
+            setPeriod = new FwMesCtrl(controller, FwUtil.FP_CTRL_CHPERIOD);
+//            setPeriod.setPar(4, (int) (stepGiveMe / FwUtil.FP_CYCLE_CONTRL));
+            setPeriod.setPar(5, (int) (stepGiveMe / FwUtil.FP_CYCLE_CONTRL));
+            sendMessage(setPeriod);
+            Thread.sleep(stepTime);
+        }
+        catch (InterruptedException ex) {
+        }
+
         lastGiveMe = new Date().getTime();
         FwResponse resp;
         countlive = 1;
-        error = 0;
         try {
-            while (!Thread.interrupted() & connect) {
+            while (!Thread.interrupted() && isConnected()) {
                 long now = new Date().getTime();
                 if ((now - lastGiveMe) > getStepGiveMe()) {
-                    givemeAll = new FwMesCtrl(controller, FwUtil.FP_CTRL_ALLINFO);
-                    sendMessage(givemeAll);
+                    for (FwOneReg oreg : data.values()) {
+                        history.add(oreg);
+                    }
                     lastGiveMe = now;
                 }
                 if ((now - lastLive) > getStepLive()) {
                     FwMesLive meslive = new FwMesLive(controller, countlive++);
-                    if(countlive>32000) countlive=1;
+                    if (countlive > 32000) {
+                        countlive = 1;
+                    }
                     sendMessage(meslive);
                     lastLive = now;
                 }
-
-                //System.out.println("MasterDev in");
-                resp = mytransport.readMessage();
-                while (resp != null) {
+                while ((resp = mytransport.readMessage()) != null) {
                     //if(FwUtil.FP_DEBUG) System.err.println("step 1");
                     if (resp.getController() != controller) {
-                        error = 1;
+                        System.err.println("Неверный номер контроллера " + Integer.toString(resp.getController()));
                         errFuncCode = resp.getFunctionCode();
                         disconect();
                         break;
@@ -166,12 +194,10 @@ public class FwMasterDevice extends Thread
                             outmessages.add(resp.getSynctime());
                             break;
                     }
-                    resp = mytransport.readMessage();
                 }
-                FwBaseMess message = inmessages.poll();
-                while (message != null) {
+                FwBaseMess message;
+                while ((message = inmessages.poll()) != null) {
                     sendMessage(message);
-                    message = inmessages.poll();
                 }
                 Thread.sleep(stepTime);
                 connect = mytransport.isConnected();
@@ -179,10 +205,7 @@ public class FwMasterDevice extends Thread
 
         }
         catch (InterruptedException ex) {
-            if (FwUtil.FP_DEBUG) {
-                System.err.println("FwMasterDevice " + ex.getMessage());
-            }
-            error = 3;
+            System.err.println("FwMasterDevice " + ex.getMessage());
             disconect();
         }
     }
@@ -190,6 +213,7 @@ public class FwMasterDevice extends Thread
     private void readValues(FwInfo info)
     {
         nomerinfo = info.getNomer();
+//        Log.CORE.info("Элементов ="+Integer.toString(info.getSize()));
         for (int i = 0; i < info.getSize(); i++) {
             FwOneReg value = info.getOneReg(i);
             //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
@@ -277,16 +301,21 @@ public class FwMasterDevice extends Thread
     private void readDiags(FwDiag diag)
     {
         for (int i = 0; i < diag.getSize(); i++) {
-            FwOneReg value = new FwOneReg(new Date(), tableDecode.getRegisterDiag(controller, diag.getDiagUId(i)));
+            FwRegister one = tableDecode.getRegisterDiag(controller, diag.getDiagUId(i));
+            if (one == null) {
+                System.err.println("Нет диагностики controller=" + Integer.toString(controller) + " uId=" + Integer.toString(diag.getDiagUId(i)));
+                continue;
+            }
+            FwOneReg value = new FwOneReg(new Date(), one);
             value.setValue(diag.getDiagCode(i));
             value.setGood(FwUtil.FP_DATA_GOOD);
-            history.add(value);
-
-            data.put(value.getReg().getKey(), value);
-
+            if (one != null) {
+                history.add(value);
+                data.put(value.getReg().getKey(), value);
+            }
             //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
         }
-        UPCMessage=diag.getUPCMessage();
+        UPCMessage = diag.getUPCMessage();
     }
 
     /**
@@ -312,7 +341,9 @@ public class FwMasterDevice extends Thread
     {
         return errFuncCode;
     }
-    public String getUPCMessage(){
+
+    public String getUPCMessage()
+    {
         return UPCMessage;
     }
 }
