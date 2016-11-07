@@ -7,6 +7,7 @@ package ru.list.ruraomsk.fwlib;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
@@ -53,6 +54,9 @@ class FwDiag extends FwBaseMess
         this.controller = controller;
         this.tableDecode = tableDecode;
         int kolvo;
+//        byte[] bbb=new byte[len];
+//        System.arraycopy(buffer, 0, bbb, 0, len);
+//        System.err.println("buffer "+Integer.toString(len)+Arrays.toString(bbb));
         int pos = 0;
         if ((len - 47) < 0) {
             kolvo = len / 2;
@@ -61,7 +65,7 @@ class FwDiag extends FwBaseMess
             kolvo = (len - 47) / 2;
         }
         for (int i = 0; i < kolvo; i++) {
-            datas.add(FwUtil.ToShort(buffer, pos));
+            datas.add((buffer[pos]<<8)|(buffer[pos+1]));
             pos += 2;
         }
         if ((len - 47) > 0) {
@@ -100,8 +104,8 @@ class FwDiag extends FwBaseMess
     {
         int tpos = pos;
         for (int j = 0; j < datas.size(); j++) {
-            FwUtil.IntToBuff(outbuf, pos, datas.get(j));
-            pos += 2;
+            outbuf[pos++]=(byte)getDiagUId(j);
+            outbuf[pos++]=(byte)getDiagCode(j);
         }
         System.arraycopy(getSkp(), 0, outbuf, pos, 3);
         pos += 3;

@@ -144,6 +144,17 @@ public class FwUtil
                 | (long) (bytes[idx + 7] & 0xff) << 24 | (long) (bytes[idx + 6] & 0xff) << 16
                 | (long) (bytes[idx + 5] & 0xff) << 8 | (long) (bytes[idx + 4] & 0xff);
     }
+    public static final void TimeToBuff(byte bytes[], int idx, long var)
+    {
+        bytes[idx + 3] = (byte) (0xff & (var >> 56));
+        bytes[idx + 2] = (byte) (0xff & (var >> 48));
+        bytes[idx + 1] = (byte) (0xff & (var >> 40));
+        bytes[idx + 0] = (byte) (0xff & (var >> 32));
+        bytes[idx + 7] = (byte) (0xff & (var >> 24));
+        bytes[idx + 6] = (byte) (0xff & (var >> 16));
+        bytes[idx + 5] = (byte) (0xff & (var >> 8));
+        bytes[idx + 4] = (byte) (0xff & var);
+    }
 
     public static byte getVersion(){
         return 0x21;

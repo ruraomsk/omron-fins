@@ -57,6 +57,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
             throws ContextException
     {
         super.setupDeviceContext(deviceContext);
+//        deviceContext.setDeviceType("com.tibbo.linkserver.plugin.device.omron-fins");
         deviceContext.setDefaultSynchronizationPeriod(10000L);
         VariableDefinition vd = new VariableDefinition("connectionProperties", VFT_CONNECTION_PROPERTIES, true, true, "connectionProperties", ContextUtils.GROUP_ACCESS);
         vd.setIconId("var_connection");
@@ -87,12 +88,12 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
     public void connect() throws DeviceException
     {
         try {
-            errorSQL=true;
+            errorSQL = true;
             makeAllTables();
             canals = new ArrayList<>();
             DataRecord cp = getDeviceContext().getVariable("connectionProperties", getDeviceContext().getCallerController()).rec();
             DataTable devs = getDeviceContext().getVariable("devices", getDeviceContext().getCallerController());
-            TimeSmesh=cp.getInt("smesh")*1000*60*60;
+            TimeSmesh = cp.getInt("smesh") * 1000 * 60 * 60;
             devs.sort("controller", true);
             int controller = -1;
             for (DataRecord dev : devs) {
@@ -162,7 +163,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
             MaxLenght = rr.getLong("max");
             TekPos = rr.getLong("pos");
             LastPos = rr.getLong("last");
-            errorSQL=false;
+            errorSQL = false;
         }
         catch (ContextException | ClassNotFoundException | SQLException ex) {
             //yesSQL = false;
@@ -182,7 +183,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
     private String myDB;
     private String myDBH;
     private boolean yesSQL = false;
-    private boolean errorSQL=true;
+    private boolean errorSQL = true;
 
     private ThreadManager thrManSQL = new ThreadManager();
     private MultiSQL thReadSQL = null;
@@ -291,17 +292,13 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
         for (FwOneReg onereg : data.values()) {
             String key = reversdata.get(onereg.getReg().getKey()) + Long.toString(onereg.getDate().getTime());
             //Log.CORE.info("Ключ из data "+key);
-            if (!tHm.containsKey(key)) {
-                tHm.put(key, onereg);
-            }
+            tHm.put(key, onereg);
         }
         while ((oreg = history.poll()) != null) {
             String key = reversdata.get(oreg.getReg().getKey()) + Long.toString(oreg.getDate().getTime());
-            if (!tHm.containsKey(key)) {
-                tHm.put(key, oreg);
-            }
+            tHm.put(key, oreg);
         }
-        StringBuffer rezult =new StringBuffer();
+        StringBuffer rezult = new StringBuffer();
 //        Integer i=0;
 //        Log.CORE.info("Начали ");
 
@@ -313,27 +310,28 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
             Object obj = onereg.getValue();
             switch (obj.getClass().getName()) {
                 case "java.lang.Boolean":
-                    rezult.append( ((Boolean) obj ? "1" : "0"));
+                    rezult.append(((Boolean) obj ? "1" : "0"));
                     break;
                 case "java.lang.Long":
-                    rezult.append( Long.toString((long) obj));
+                    rezult.append(Long.toString((long) obj));
                     break;
                 case "java.lang.Integer":
-                    rezult.append( Integer.toString((int) obj));
+                    rezult.append(Integer.toString((int) obj));
                     break;
                 default:
-                    rezult.append( Float.toString((Float) obj));
+                    rezult.append(Float.toString((Float) obj));
                     break;
             }
             rezult.append("_" + Long.toString(onereg.getDate().getTime()) + ">");
         }
 //        Log.CORE.info("Записали " + Integer.toString(rezult.length()));
 
-        Timestamp timestamp = new Timestamp((new Date().getTime())+TimeSmesh);
+        Timestamp timestamp = new Timestamp((new Date().getTime()) + TimeSmesh);
         StSQL mySQL = new StSQL(timestamp, rezult);
         hSQL.add(mySQL);
     }
     private long TimeSmesh;
+
     @Override
     public DataTable readVariableValue(VariableDefinition vd, CallerController caller) throws ContextException, DeviceException, DisconnectionException
     {
@@ -581,7 +579,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
             return;
         }
         try {
-            Date now = new Date((new Date().getTime())+TimeSmesh);
+            Date now = new Date((new Date().getTime()) + TimeSmesh);
             history = new ConcurrentLinkedQueue<>();
             DataTable regs = getDeviceContext().getVariable("registers", getDeviceContext().getCallerController());
             tableDecode = new FwRegisters(FwUtil.VALUE_UIDS);
@@ -663,7 +661,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
         ff = FieldFormat.create("<format><I><D=Формат>");
         ff.setSelectionValues(FormatSelectionValues());
         VFT_REGISTERS.addField(ff);
-        ff = FieldFormat.create("<lenght><I><D=Длина в байтах>");
+        ff = FieldFormat.create("<lenght><I><A=2><D=Длина в байтах>");
         ff.setSelectionValues(LenghtSelectionValues());
         VFT_REGISTERS.addField(ff);
 
@@ -692,7 +690,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
         StSQL(Timestamp timestamp, StringBuffer var)
         {
             this.timestamp = timestamp;
-            this.var=var;
+            this.var = var;
         }
 
         public Timestamp getTimestamp()
@@ -836,7 +834,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
                         Log.CORE.info("в очереди на запись запросов " + hSQL.size());
                     }
                     StSQL mySt;
-                    if(errorSQL) {
+                    if (errorSQL) {
                         ReconectSQL();
                         AggreGateThread.sleep(1000L);
                         continue;
@@ -876,7 +874,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
 
         private void ReconectSQL()
         {
-            errorSQL=true;
+            errorSQL = true;
             try {
                 DataRecord sqlrec = getDeviceContext().getVariable("SQLProperties", getDeviceContext().getCallerController()).rec();
                 yesSQL = sqlrec.getBoolean("yesSQL");
@@ -891,7 +889,7 @@ public class OmronFinsDeviceDriver extends AbstractDeviceDriver
                 MaxLenght = rr.getLong("max");
                 TekPos = rr.getLong("pos");
                 LastPos = rr.getLong("last");
-                errorSQL=false;
+                errorSQL = false;
             }
             catch (ContextException | ClassNotFoundException | SQLException ex) {
                 Log.CORE.info(ex.getMessage());

@@ -25,6 +25,7 @@ public class FwKvit extends FwBaseMess
     }
 /**
  * Создание пустой квитанции
+     * @param controller
  */
     public FwKvit(int controller)
     {

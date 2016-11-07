@@ -195,7 +195,7 @@ public class FwTest
     {
 
         System.out.println("testFwMesLive");
-        FwMesLive msout=new FwMesLive(1);
+        FwMesLive msout=new FwMesLive(1,1);
         msout.setCounter(2000);
         byte[] buffer = new byte[1000];
         msout.toBuffer(buffer, 0);

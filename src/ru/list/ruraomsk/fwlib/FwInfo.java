@@ -7,7 +7,6 @@ package ru.list.ruraomsk.fwlib;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import org.apache.commons.net.ntp.TimeStamp;
 /**
@@ -55,7 +54,7 @@ class FwInfo extends FwBaseMess
         this.pos = tpos;
         FwOneReg oreg = datas.get(0);
         Date firstdate = oreg.getDate();
-        FwUtil.LongToBuff(buffer, pos, firstdate.getTime());
+        FwUtil.TimeToBuff(buffer, pos, firstdate.getTime());
         pos += 8;
         FwUtil.IntToBuff(buffer, pos, nomer);
         pos += 4;
@@ -241,12 +240,7 @@ class FwInfo extends FwBaseMess
      */
     public boolean isFull()
     {
-        if (datas.size() > MAX_SIZE) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return datas.size() > MAX_SIZE;
     }
 
     @Override

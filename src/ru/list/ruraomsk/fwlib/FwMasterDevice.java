@@ -5,8 +5,6 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import com.tibbo.aggregate.common.Log;
-import java.io.IOException;
 import java.net.Socket;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -309,10 +307,8 @@ public class FwMasterDevice extends Thread
             FwOneReg value = new FwOneReg(new Date(), one);
             value.setValue(diag.getDiagCode(i));
             value.setGood(FwUtil.FP_DATA_GOOD);
-            if (one != null) {
-                history.add(value);
-                data.put(value.getReg().getKey(), value);
-            }
+            history.add(value);
+            data.put(value.getReg().getKey(), value);
             //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
         }
         UPCMessage = diag.getUPCMessage();

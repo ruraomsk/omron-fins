@@ -5,9 +5,6 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 /**
  *
  * @author Русинов Юрий <ruraomsk@list.ru>

@@ -5,8 +5,6 @@
  */
 package ru.list.ruraomsk.fwlib;
 
-import java.util.Arrays;
-
 /**
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
