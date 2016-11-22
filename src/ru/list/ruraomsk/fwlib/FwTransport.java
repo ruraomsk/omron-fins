@@ -27,14 +27,18 @@ public class FwTransport extends Thread
     private FwRegisters tableDecode = null;
     private ConcurrentLinkedQueue<FwResponse> qResp = null;
     private Socket socket = null;
-    public int error = 0;
     public String textError = "Not Error";
-
+    private Integer[] count=new Integer[5];
+    private int cnt=0;
     public FwTransport(Socket socket, FwRegisters tableDecode)
     {
         this.socket = socket;
         this.tableDecode = tableDecode;
         qResp = new ConcurrentLinkedQueue();
+        for (int i = 0; i < count.length; i++) {
+            count[i]=0;
+            
+        }
     }
 
     public boolean connect()
@@ -52,7 +56,6 @@ public class FwTransport extends Thread
         }
         catch (IOException ex) {
                 System.err.println("FwTransposrt connect " + ex.getMessage());
-            error = 1;
             close();
         }
         return connect;
@@ -105,7 +108,6 @@ public class FwTransport extends Thread
         }
         catch (IOException ex) {
                 System.err.println("WriteMessage " + ex.getMessage());
-            error = 2;
         }
     }
 
@@ -118,7 +120,6 @@ public class FwTransport extends Thread
                 //textError="Читаем из потока пять байт";
                 if (m_Input.read(inb, 0, 5) != 5) {
                         System.err.println("Bad header");
-                    error = 3;
                     close();
                     //m_Input.skip(m_Input.available());
                     continue;
@@ -128,10 +129,10 @@ public class FwTransport extends Thread
                     Integer len = FwUtil.ToShort(inb, 0);
                     Integer controller = FwUtil.ToShort(inb, 2);
                     byte functionCode = inb[4];
-                    //System.out.println("buffer len " +len.toString()+" "+controller.toString()+" "+Integer.toHexString(functionCode));
+//                    System.err.println("buffer len " +len.toString()+" "+controller.toString()+" "+Integer.toHexString(functionCode));
                     if ((len < FwUtil.MIN_LEN) || (len > FwUtil.MAX_LEN)) {
-                            System.err.println("Bad lenght");
-                        error = 4;
+                        errormessage(1);    
+//                        System.err.println("Bad lenght");
                         m_Input.skip(m_Input.available());
                         continue;                    //throw new IOException("Error from lenght.");
                     }
@@ -139,37 +140,52 @@ public class FwTransport extends Thread
                     if (m_Input.read(FwUtil.buffer, 0, len) == len) {
                         //textError="Читаем из потока два байта";
                         if (m_Input.read(inb, 0, 2) != 2) {
-                                System.err.println("Bad reading CRC " + Integer.toHexString(functionCode));
-                            error = 5;
+                        errormessage(2);    
+
+//                            System.err.println("Bad reading CRC " + Integer.toHexString(functionCode));
                             continue;
                         }
                         System.arraycopy(FwUtil.buffer, 0, FwUtil.crcbuffer, 5, len);
                         int crc = FwUtil.ToShort(inb, 0) & 0x7FFF;
                         if (crc == FwUtil.Crc(FwUtil.crcbuffer, 0, len + 5)) {
                             //textError="Разбираем ответ "+Integer.toHexString(functionCode);
+                            errormessage(0);
                             qResp.offer(new FwResponse(controller, functionCode, len, FwUtil.buffer, tableDecode));
                             //textError="Разобрали ответ "+Integer.toHexString(functionCode);
                         }
                         else {
-                            error = 6;
-                                System.err.println("Bad CRC " + Integer.toString(crc) + " wait= " + Integer.toString(FwUtil.Crc(FwUtil.crcbuffer, 0, len + 5)));
+                            errormessage(3);
+//                                System.err.println("Bad CRC " + Integer.toString(crc) + " wait= " + Integer.toString(FwUtil.Crc(FwUtil.crcbuffer, 0, len + 5)));
+                                m_Input.skip(m_Input.available());
                         }
                     }
                     else {
-                        error = 7;
-                            System.err.println("Not correct len");
+                        errormessage(4);
+//                            System.err.println("Not correct len");
+                            m_Input.skip(m_Input.available());
                     }
                 }
             }
             catch (Exception ex) {
                 //textError=ex.getMessage();
                     System.err.println("FwTransport " + ex.getMessage());
-                error = 8;
                 close();
             }
         }
     }
-
+private void errormessage(int pos){
+    count[pos]+=1;
+    cnt++;
+    if(cnt>5000){
+        String result="report ";
+        for (int i = 0; i < count.length; i++) {
+            result+=count[i].toString()+" ";
+            count[i]=0;
+        }
+        System.err.println(result);
+        cnt=0;
+    }
+}
     /**
      * @return the tableDecode
      */

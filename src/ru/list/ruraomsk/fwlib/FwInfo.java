@@ -110,6 +110,9 @@ class FwInfo extends FwBaseMess
 
     private void setValue(byte[] buffer, FwOneReg oreg)
     {
+        int uId=oreg.getReg().getuId();
+        buffer[pos]=(byte)(uId>>8);
+        buffer[pos+1]=(byte)(uId&0xff);
         FwUtil.IntToBuff(buffer, pos, oreg.getReg().getuId());
         pos += 2;
         oreg.setBuffer(buffer, pos);
@@ -181,12 +184,15 @@ class FwInfo extends FwBaseMess
 
     private FwOneReg getValue(byte[] buffer)
     {
-        int uId = FwUtil.ToShort(buffer, pos);
+//        int uId = FwUtil.ToShort(buffer, pos);
+        int uId=(buffer[pos] << 8) | (buffer[pos+1] & 0xff);
         pos += 2;
         FwOneReg temp = new FwOneReg();
         temp.setReg(tableDecode.getRegister(controller, uId));
         if (temp.getReg() == null) {
-            System.err.println("not found " + Integer.toString(controller) + ":" + Integer.toString(uId));
+            int mesto=uId>>8;
+            int sig=uId&0xff;
+            System.err.println("not found " + Integer.toString(controller) + ":" + Integer.toString(mesto)+"-"+Integer.toString(sig)+"/"+Integer.toString(uId));
             pos += 2;
         }
         else {
