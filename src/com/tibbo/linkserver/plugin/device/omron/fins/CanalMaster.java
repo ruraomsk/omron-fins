@@ -7,9 +7,12 @@ package com.tibbo.linkserver.plugin.device.omron.fins;
 
 import com.tibbo.aggregate.common.Log;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import ru.list.ruraomsk.fwlib.FwBaseMess;
 import ru.list.ruraomsk.fwlib.FwMasterDevice;
 import ru.list.ruraomsk.fwlib.FwOneReg;
@@ -19,145 +22,154 @@ import ru.list.ruraomsk.fwlib.FwRegisters;
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-public class CanalMaster
-{
+public class CanalMaster extends Thread {
 
     public int controller;
     private FwMasterDevice workCanal = null;
     private FwRegisters tableDecode = null;
     public ArrayList<FwMasterDevice> mdarray = new ArrayList<>();
-    private ArrayList<Socket> socketarray = new ArrayList<>();
+    public ArrayList<Socket> socketarray = new ArrayList<>();
     private long timeout = 20000L;
+    private int port;
+    private boolean master = true;
 
-    public CanalMaster(int controller, FwRegisters tableDecode, long timeout)
-    {
+    public CanalMaster(int controller, FwRegisters tableDecode, long timeout) {
         this.controller = controller;
         this.tableDecode = tableDecode;
         this.timeout = timeout;
     }
 
-    public FwMasterDevice addDevice(Socket socket)
-    {
+    /**
+     * Устанавливает данный канал пассивным
+     *
+     * @param port - номер порта
+     */
+    public void setSlave(int port) {
+        this.port = port;
+        master = false;
+        start();
+    }
+
+    public boolean isMaster() {
+        return master;
+    }
+
+    /**
+     * Добавляет устройство в канал
+     *
+     * @param socket
+     * @return
+     */
+    public FwMasterDevice addDevice(Socket socket) {
         try {
             socket.setSoTimeout((int) timeout);
             socketarray.add(socket);
             FwMasterDevice md = new FwMasterDevice(socket, controller, tableDecode);
             workCanal = md;
-            mdarray.add(md);
+            synchronized (mdarray) {
+                mdarray.add(md);
+            }
             return md;
-        }
-        catch (SocketException ex) {
-            Log.CORE.info("Set timeOut " + ex);
+        } catch (SocketException ex) {
+            Log.CORE.error("Set timeOut " + ex);
             return null;
         }
     }
 
-    public void reconnectDevice(int idx)
-    {
+    /**
+     * переподключает устройство если канал активный
+     *
+     * @param idx
+     */
+    public void reconnectDevice(int idx) {
+        if (!master) {
+            return;
+        }
         try {
-            //Log.CORE.info("Создаем заново ");
             Socket socket = new Socket(socketarray.get(idx).getInetAddress(), socketarray.get(idx).getPort());
             socket.setSoTimeout((int) timeout);
             FwMasterDevice md = new FwMasterDevice(socket, controller, tableDecode);
             workCanal = md;
-            //Log.CORE.info("Создали заново "+md.myAddress());
-            socketarray.set(idx, socket);
-            mdarray.set(idx, md);
-        }
-        catch (IOException ex) {
-            Log.CORE.info("Reconect " + ex);
+            Log.CORE.info("Создали заново " + md.myAddress());
+            synchronized (mdarray) {
+                socketarray.set(idx, socket);
+                mdarray.set(idx, md);
+            }
+        } catch (IOException ex) {
+            Log.CORE.error("Reconect " + ex);
         }
     }
 
-    public void changeCanal()
-    {
+    /**
+     * назначает основное устройство в канале
+     */
+    public void changeCanal() {
         workCanal = null;
-        /*
-        if (FwUtil.FP_DEBUG)
-        {
-            Log.CORE.info("=======================");
-        }
-         */
         for (FwMasterDevice master : mdarray) {
-            /*
-            if (FwUtil.FP_DEBUG)
-            {
-                Log.CORE.info(master.myAddress() + "/" + Integer.toString(controller) + " errors=" + Integer.toString(master.error) + " "
-                        + Integer.toHexString(master.getErrFuncCode()) + (master.isConnected() ? " connected" : " disconnected"));
-            }
-            if (FwUtil.FP_DEBUG)
-            {
-                Log.CORE.info("Transport " + Integer.toString(master.mytransport.error) + " " + master.mytransport.textError);
-            }
-            if (FwUtil.FP_DEBUG)
-            {
-                Log.CORE.info(FwUtil.textError);
-            }
-             */
             if (master.isConnected()) {
                 workCanal = master;
             }
         }
-        /*
-        for (FwRegister reg : tableDecode.getCollection())
-        {
-            if (FwUtil.FP_DEBUG)
-            {
-                Log.CORE.info(reg.toString());
-            }
-        }
-         */
-
     }
 
-    public String nameWorkCanal()
-    {
+    public String nameWorkCanal() {
         if (workCanal == null) {
             return null;
         }
         return workCanal.myAddress();
     }
 
-    public void clearDatas()
-    {
+    public void clearDatas() {
         for (FwMasterDevice master : mdarray) {
             while (master.getHistory() != null);
         }
     }
 
-    public FwOneReg getHistory()
-    {
+    public FwOneReg getHistory() {
         if (workCanal == null) {
             return null;
         }
         return workCanal.getHistory();
     }
 
-    public String getUPCMessage()
-    {
+    public String getUPCMessage() {
         if (workCanal == null) {
             return null;
         }
         return workCanal.getUPCMessage();
     }
 
-    public FwBaseMess readMessage()
-    {
+    public FwBaseMess readMessage() {
         if (workCanal == null) {
             return null;
         }
         return workCanal.readMessage();
     }
 
-    public void putMessage(FwBaseMess message)
-    {
+    public void putMessage(FwBaseMess message) {
         for (FwMasterDevice master : mdarray) {
             if (master.isConnected()) {
                 master.putMessage(message);
             }
         }
     }
-    public int getController(){
+
+    public int getController() {
         return controller;
     }
+
+    @Override
+    public void run() {
+        try {
+            ServerSocket serverSocket = new ServerSocket(port);
+            while (!isInterrupted()) {
+                Socket socket = serverSocket.accept();
+                FwMasterDevice md = addDevice(socket);
+                md.gogo();
+            }
+        } catch (IOException ex) {
+            Log.CORE.error("Ошибка в пассивном сокете " + ex.getMessage());
+        }
+    }
+
 }

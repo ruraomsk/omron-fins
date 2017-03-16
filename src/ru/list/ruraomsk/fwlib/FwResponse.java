@@ -5,93 +5,84 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
+
 /**
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-public class FwResponse
-{
+public class FwResponse {
 
     private int controller;
     private byte functionCode;
     private Object info = null;
 
-    FwResponse(int controller, byte functionCode, int len, byte[] buffer, FwRegisters tableDecode)
-    {
-        try {
-            this.controller = controller;
-            this.functionCode = functionCode;
+    FwResponse(int controller, byte functionCode, int len, byte[] buffer, FwRegisters tableDecode) {
+        this.controller = controller;
+        this.functionCode = functionCode;
 
-            switch (functionCode) {
-                case FwUtil.FP_CODE_INFO:
-                    info = new FwInfo(len, buffer, controller, tableDecode);
-                    break;
-                case FwUtil.FP_CODE_35H:
+        switch (functionCode) {
+            case FwUtil.FP_CODE_INFO:
+                info = new FwInfo(len, buffer, controller, tableDecode);
+                break;
+            case FwUtil.FP_CODE_35H:
 
-                    info = new FwKvit(buffer, controller);
+                info = new FwKvit(buffer, controller);
 //                System.err.println("FwResponse Kvit controller="+Integer.toString(controller));
-                    break;
-                case FwUtil.FP_CODE_34H:
+                break;
+            case FwUtil.FP_CODE_34H:
 //              byte[] b=new byte[len];
 //              System.arraycopy(buffer, 0, b, 0, len);
 //              System.err.println("FwResponse"+Arrays.toString(b));
-                    info = new FwSetup(true, len, buffer, controller);
-                    break;
-                case FwUtil.FP_CODE_36H:
-                    info = new FwSetup(false, len, buffer, controller);
-                    break;
-                case FwUtil.FP_CODE_30H:
-                    info = new FwDiag(len, buffer, controller, tableDecode);
-                    break;
-                case FwUtil.FP_CODE_64H:
-                    info = new FwMesLive(buffer, controller);
-                    break;
-                case FwUtil.FP_CODE_91H:
-                    info = new FwSyncTime(buffer, controller);
-                    break;
-                case FwUtil.FP_CODE_10H:
-                    info = new FwMesCtrl(buffer, controller);
-                    break;
-                default: {
-                    System.err.println("Bad function code=" + Integer.toString(functionCode));
-                    //throw new IOException("Bad function code."+Integer.toString(this.getFunctionCode()));
-                }
+                info = new FwSetup(true, len, buffer, controller);
+                break;
+            case FwUtil.FP_CODE_36H:
+                info = new FwSetup(false, len, buffer, controller);
+                break;
+            case FwUtil.FP_CODE_30H:
+                info = new FwDiag(len, buffer, controller, tableDecode);
+                break;
+            case FwUtil.FP_CODE_64H:
+                info = new FwMesLive(buffer, controller);
+                break;
+            case FwUtil.FP_CODE_91H:
+                info = new FwSyncTime(buffer, controller);
+                break;
+            case FwUtil.FP_CODE_10H:
+                info = new FwMesCtrl(buffer, controller);
+                break;
+            default: {
+                Log.CORE.error("Bad function code=" + Integer.toString(functionCode));
+                //throw new IOException("Bad function code."+Integer.toString(this.getFunctionCode()));
             }
-        }
-        catch (Exception ex) {
-            System.err.println("FwResponce error " + ex.getMessage());
         }
     }
 
     /**
      * @return the controller
      */
-    public int getController()
-    {
+    public int getController() {
         return controller;
     }
 
     /**
      * @return the functionCode
      */
-    public byte getFunctionCode()
-    {
+    public byte getFunctionCode() {
         return functionCode;
     }
 
     /**
      * @return the info
      */
-    public FwInfo getInfo()
-    {
+    public FwInfo getInfo() {
         if (getFunctionCode() == FwUtil.FP_CODE_INFO) {
             return (FwInfo) info;
         }
         return null;
     }
 
-    public FwSetup getSetup()
-    {
+    public FwSetup getSetup() {
         if (getFunctionCode() == FwUtil.FP_CODE_34H
                 || getFunctionCode() == FwUtil.FP_CODE_36H) {
             return (FwSetup) info;
@@ -102,8 +93,7 @@ public class FwResponse
     /**
      * @return the kvit
      */
-    public FwKvit getKvit()
-    {
+    public FwKvit getKvit() {
         if (getFunctionCode() == FwUtil.FP_CODE_35H) {
             return (FwKvit) info;
         }
@@ -113,8 +103,7 @@ public class FwResponse
     /**
      * @return the synctime
      */
-    public FwSyncTime getSynctime()
-    {
+    public FwSyncTime getSynctime() {
         if (getFunctionCode() == FwUtil.FP_CODE_91H) {
             return (FwSyncTime) info;
         }
@@ -125,16 +114,14 @@ public class FwResponse
      *
      * @return the MesLive
      */
-    public FwMesLive getMesLive()
-    {
+    public FwMesLive getMesLive() {
         if (getFunctionCode() == FwUtil.FP_CODE_64H) {
             return (FwMesLive) info;
         }
         return null;
     }
 
-    public FwMesCtrl getMesCtrl()
-    {
+    public FwMesCtrl getMesCtrl() {
         if (getFunctionCode() == FwUtil.FP_CODE_10H) {
             return (FwMesCtrl) info;
         }
@@ -144,8 +131,7 @@ public class FwResponse
     /**
      * @return the diag
      */
-    public FwDiag getDiag()
-    {
+    public FwDiag getDiag() {
         if (getFunctionCode() == FwUtil.FP_CODE_30H) {
             return (FwDiag) info;
         }

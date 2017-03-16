@@ -5,6 +5,8 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
+import java.net.Socket;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -16,13 +18,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class FwSlaveDevice extends Thread
 {
 
-    public ConcurrentHashMap<String, SlaveListner> listners = null;
-    private ConcurrentHashMap<Long, FwOneReg> data = null;
+//    public ConcurrentHashMap<String, SlaveListner> listners = null;
+    private ConcurrentHashMap<Integer, FwOneReg> data = null;
 
     private ConcurrentLinkedQueue<FwBaseMess> inmessages;
     private ConcurrentLinkedQueue<FwBaseMess> outmessages;
 
-    private int port;
+    private Socket socket;
     private int controller;
     public int nomerinfo = 1;
     public int nomerdiag = 0;
@@ -30,31 +32,31 @@ public class FwSlaveDevice extends Thread
     private FwInfo info;
     private FwRegisters tableDecode = null;
     private final long stepTime = FwUtil.FP_STEP_TIME;
+    private int count=0;
     public int error = 0;
     public Date lastsync = new Date();
     public Date lastdiag = new Date();
     private String UPCMessage = "";
-
-    public FwSlaveDevice(int port, int controller, FwRegisters tableDecode)
+    private FwTransport myTransport;
+    public FwSlaveDevice(Socket socket, int controller, FwRegisters tableDecode)
     {
         this.inmessages = new ConcurrentLinkedQueue<>();
         this.outmessages = new ConcurrentLinkedQueue<>();
-        this.port = port;
+        this.socket = socket;
         this.controller = controller;
         this.tableDecode = tableDecode;
         // регистрируем устройство 
-        listners = new ConcurrentHashMap<>();
         data = new ConcurrentHashMap<>(FwUtil.VALUE_UIDS);
-        FwUtil.S_DEV.put(port, this);
         for (FwRegister reg : tableDecode.getCollection()) {
             if ((reg.getController() == controller)) {
-                FwOneReg onereg = new FwOneReg(new Date(), reg);
+                FwOneReg onereg = new FwOneReg(System.currentTimeMillis(), reg);
                 data.put(reg.getKey(), onereg);
             }
         }
+        myTransport = new FwTransport(socket, this.tableDecode);
+
         info = new FwInfo(controller, nomerinfo);
         changeAllDate();
-        loadAllValues();
         start();
     }
 
@@ -64,9 +66,8 @@ public class FwSlaveDevice extends Thread
         FwResponse resp = null;
         while (!Thread.interrupted()) {
             try {
-                for (SlaveListner sl : listners.values()) {
-                    sl.notLive();
-                    while ((resp = sl.getResponse()) != null) {
+                    notLive();
+                    while ((resp = myTransport.readMessage()) != null) {
                         if (resp.getController() != getController()) {
                             error++;
                             continue;
@@ -87,18 +88,14 @@ public class FwSlaveDevice extends Thread
                                 break;
                             case FwUtil.FP_CODE_64H:
                                 // master is live))
-                                sl.isLive();
                                 break;
                         }
-                    }
 
                 }
                 FwBaseMess message;
                 while ((message = inmessages.poll()) != null) {
-                    for (SlaveListner sl : listners.values()) {
-                        sl.addMessage(new FwMessage(message));
+                        myTransport.writeMessage(new FwMessage(message));
                     }
-                }
 
                 Date dd = new Date();
                 if ((dd.getTime() - lastdiag.getTime()) > FwUtil.FP_STEP_DIAG) {
@@ -108,33 +105,27 @@ public class FwSlaveDevice extends Thread
                 Thread.sleep(stepTime);
             }
             catch (InterruptedException ex) {
-                if (FwUtil.FP_DEBUG) {
-                    System.err.println("FwSlaveDevice ошибка " + ex.getMessage());
-                }
-                //myTransport.close();
+                    Log.CORE.error("FwSlaveDevice ошибка " + ex.getMessage());
             }
         }
 
     }
 
-    /**
-     * Регистрирует нового листнера
-     *
-     * @param name
-     * @param listner
-     * @return объект стушателя
-     */
-    public SlaveListner appendListner(String name, FwSlaveListner listner)
+    public void notLive()
     {
-        SlaveListner temp = new SlaveListner(listner);
-        listners.put(name, temp);
-//        System.err.println("Добавлен "+name);
-        return temp;
+        if (++count > 32000) {
+            count = 32000;
+        }
+    }
+
+    public void isLive()
+    {
+        count = 0;
     }
 
     public Object getCode(int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, false);
+        int key = FwRegister.makeKey(controller, uId, false);
         if (data.get(key) == null) {
             return null;
         }
@@ -143,12 +134,12 @@ public class FwSlaveDevice extends Thread
 
     public void setCode(int uId, Object code)
     {
-        long key = FwRegister.makeKey(controller, uId, false);
+        int key = FwRegister.makeKey(controller, uId, false);
         FwOneReg t = data.get(key);
         if (t == null) {
             return;
         }
-        t.setDate(new Date());
+        t.setDate(System.currentTimeMillis());
         t.setValue(code);
         t.setGood(FwUtil.FP_DATA_GOOD);
         data.put(key, t);
@@ -156,7 +147,7 @@ public class FwSlaveDevice extends Thread
 
     public Object getValue(int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
         if (data.get(key) == null) {
             return null;
         }
@@ -165,10 +156,10 @@ public class FwSlaveDevice extends Thread
 
     public void setValue(int uId, Object value, byte good)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
         FwOneReg temp = data.get(key);
 
-        temp.setDate(new Date());
+        temp.setDate(System.currentTimeMillis());
         temp.setValue(value);
         temp.setGood(good);
         data.put(key, temp);
@@ -177,9 +168,9 @@ public class FwSlaveDevice extends Thread
 
     public void setValue(int uId, Object value)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
         FwOneReg temp = data.get(key);
-        temp.setDate(new Date());
+        temp.setDate(System.currentTimeMillis());
         temp.setValue(value);
         temp.setGood(FwUtil.FP_DATA_GOOD);
         data.put(key, temp);
@@ -211,7 +202,6 @@ public class FwSlaveDevice extends Thread
             sendAll(info);
             info = new FwInfo(getController(), nomerinfo++);
             changeAllDate();
-            loadAllValues();
 
         }
         info.addOneReg(oreg);
@@ -232,22 +222,17 @@ public class FwSlaveDevice extends Thread
 
     private void sendAll(FwBaseMess message)
     {
-        //System.out.println("Storage all...");
-        for (SlaveListner sl : listners.values()) {
-            if (sl.isconnected()) {
-                sl.addMessage(new FwMessage(message));
-                //System.out.println("Send full info message...");
+                myTransport.writeMessage(new FwMessage(message));
                 error = 0;
-            }
-        }
     }
 
     private void changeAllDate()
     {
-        Date date = new Date();
+        long date = System.currentTimeMillis();
 
         for (FwOneReg oreg : data.values()) {
             oreg.setDate(date);
+            oreg.setGood(FwUtil.FP_DATA_GOOD);
         }
     }
 
@@ -292,6 +277,14 @@ public class FwSlaveDevice extends Thread
     public FwBaseMess readMessage()
     {
         return outmessages.poll();
+    }
+
+    public boolean isconnected() {
+        return myTransport.isConnected();
+    }
+
+    public int LiveCount() {
+        return count;
     }
 
 }

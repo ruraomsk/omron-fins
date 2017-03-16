@@ -159,7 +159,6 @@ public class FwUtil
     public static byte getVersion(){
         return 0x21;
     }
-    public static boolean FP_DEBUG = true;
     public static int MAX_LEN = 64000;
     public static int MIN_LEN = 1;
     public static int VALUE_UIDS = 1000;     // Примерное колличество переменных на устройстве
@@ -198,8 +197,8 @@ public class FwUtil
     static final long FP_STEP_LIVE = 10000L;  // стандартная временная задерка для отправки сообщений о живучести
 
     static final byte FP_DATA_GOOD = 0x0;     // данные достоверные
-    static final byte FP_DATA_NOGOOD = 0xf;   // данные совсем плохие
-    static final long FP_FLAGINFO = 1048576L;
+    public static final byte FP_DATA_NOGOOD = 0xf;   // данные совсем плохие
+    static final int FP_FLAGINFO = 0x80000000;
 
     static final byte[] buffer = new byte[FwUtil.MAX_LEN];
     static final byte[] crcbuffer = new byte[FwUtil.MAX_LEN];

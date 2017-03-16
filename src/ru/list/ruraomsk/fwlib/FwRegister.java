@@ -114,14 +114,14 @@ public class FwRegister
         this.type = type;
     }
 
-    public long getKey()
+    public int getKey()
     {
-        return ((info ? FwUtil.FP_FLAGINFO : 0L) + ((long) controller) << 16) + uId;
+        return ((info ? FwUtil.FP_FLAGINFO : 0) | ((int) controller) << 16) | uId;
     }
 
-    public static long makeKey(int controller, int uId, boolean info)
+    public static int makeKey(int controller, int uId, boolean info)
     {
-        return ((info ? FwUtil.FP_FLAGINFO : 0L) + ((long) controller) << 16) + uId;
+        return ((info ? FwUtil.FP_FLAGINFO : 0) | ((int) controller) << 16) | uId;
     }
 
     @Override

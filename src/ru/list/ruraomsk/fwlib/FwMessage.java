@@ -5,6 +5,7 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -38,9 +39,7 @@ class FwMessage
                 m_Output.write(FwUtil.outbuf, 0, size);
             }
             catch (IOException ex) {
-                if (FwUtil.FP_DEBUG) {
-                    System.err.println("FwMessage " + ex.getMessage());
-                }
+                    Log.CORE.error("FwMessage " + ex.getMessage());
             }
         }
     }

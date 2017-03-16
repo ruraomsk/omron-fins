@@ -5,17 +5,18 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import org.apache.commons.net.ntp.TimeStamp;
+
 /**
  * Класс для хранения значений переменных сообщений 1h.
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-class FwInfo extends FwBaseMess
-{
+class FwInfo extends FwBaseMess {
 
     private final byte functioncode = FwUtil.FP_CODE_INFO;
     private ArrayList<FwOneReg> datas = new ArrayList(FwUtil.VALUE_UIDS);
@@ -35,8 +36,7 @@ class FwInfo extends FwBaseMess
      * @param tableDecode - таблица имен и типов переменных
      * @param nomer - номер создаваемого сообщения
      */
-    public FwInfo(int controller, int nomer)
-    {
+    public FwInfo(int controller, int nomer) {
         this.controller = controller;
         this.nomer = nomer;
     }
@@ -49,12 +49,12 @@ class FwInfo extends FwBaseMess
      * @return длина выгруженного сообщения в байтах
      */
     @Override
-    public int toBuffer(byte[] buffer, int tpos)
-    {
+    public int toBuffer(byte[] buffer, int tpos) {
         this.pos = tpos;
         FwOneReg oreg = datas.get(0);
-        Date firstdate = oreg.getDate();
-        FwUtil.TimeToBuff(buffer, pos, firstdate.getTime());
+        long firstdate = oreg.getDate();
+
+        FwUtil.TimeToBuff(buffer, pos, firstdate);
         pos += 8;
         FwUtil.IntToBuff(buffer, pos, nomer);
         pos += 4;
@@ -79,12 +79,12 @@ class FwInfo extends FwBaseMess
         }
         do {
             oreg = datas.get(i);
-            int temp = (int) (oreg.getDate().getTime() - firstdate.getTime());
+            int temp = (int) (oreg.getDate() - firstdate);
             FwUtil.IntToBuff(buffer, pos, temp);
             pos += 2;
             int spos = pos;
             pos += 2;
-            Date tfirstdate = oreg.getDate();
+            long tfirstdate = oreg.getDate();
             kolvo = 0;
             do {
                 setValue(buffer, oreg);
@@ -97,29 +97,26 @@ class FwInfo extends FwBaseMess
                 if (tfirstdate != oreg.getDate()) {
                     break;
                 }
-            }
-            while (true);
+            } while (true);
             FwUtil.IntToBuff(buffer, spos, kolvo);
             if (i >= datas.size()) {
                 break;
             }
-        }
-        while (true);
+        } while (true);
         return pos - tpos;
     }
 
-    private void setValue(byte[] buffer, FwOneReg oreg)
-    {
-        int uId=oreg.getReg().getuId();
-        buffer[pos]=(byte)(uId>>8);
-        buffer[pos+1]=(byte)(uId&0xff);
+    private void setValue(byte[] buffer, FwOneReg oreg) {
+        int uId = oreg.getReg().getuId();
+        buffer[pos] = (byte) (uId >> 8);
+        buffer[pos + 1] = (byte) (uId & 0xff);
         FwUtil.IntToBuff(buffer, pos, oreg.getReg().getuId());
         pos += 2;
         oreg.setBuffer(buffer, pos);
         pos += oreg.getReg().getLen();
         buffer[pos++] = oreg.getGood();
         // АППЕРТУРА
-        pos+=2;
+        pos += 2;
     }
 
     /**
@@ -131,71 +128,55 @@ class FwInfo extends FwBaseMess
      * @param tableDecode таблица имен и типов переменных
      * @throws IOException выбрасывается если в структуре сообщения ошибки
      */
-    public FwInfo(int len, byte[] buffer, int controller, FwRegisters tableDecode)
-    {
-        try {
-//            byte[] buf = new byte[len];
-//            System.arraycopy(buffer, 0, buf, 0, len);
-//            System.err.println("Buffer=" + Arrays.toString(buf));
-            Date date = null, ndate = null;
-            TimeStamp ts=new TimeStamp(FwUtil.ToTime(buffer, 0));
-            date = new Date(ts.getTime());
-            nomer = FwUtil.ToShort(buffer, 8);
-            pos = 12;
-            this.controller = controller;
-            this.tableDecode = tableDecode;
-            FwUtil.textError = "";
-            //for (FwRegister reg : tableDecode.getCollection())
-            //{
-            //    if (FwUtil.FP_DEBUG)
-            //    {
-            //        FwUtil.textError += reg.toString() + "/ ";
-            //    }
-            //}
+    public FwInfo(int len, byte[] buffer, int controller, FwRegisters tableDecode) {
+        long date, ndate;
+//            TimeStamp ts=new TimeStamp(FwUtil.ToTime(buffer, 0));
+//            date = ts.getTime();
+        date = FwUtil.ToTime(buffer, 0);
+        nomer = FwUtil.ToShort(buffer, 8);
+        pos = 12;
+        this.controller = controller;
+        this.tableDecode = tableDecode;
+        FwUtil.textError = "";
 
-            int kolvo = FwUtil.ToShort(buffer, 10);
+        int kolvo = FwUtil.ToShort(buffer, 10);
+        for (int i = 0; i < kolvo; i++) {
+            FwOneReg temp = getValue(buffer);
+            temp.setDate(date);
+            if (temp.getReg() != null) {
+                datas.add(temp);
+            }
+        }
+        while (pos < len) {
+            int addms = FwUtil.ToShort(buffer, pos);
+            pos += 2;
+            kolvo = FwUtil.ToShort(buffer, pos);
+            pos += 2;
+            ndate = date + addms;
             for (int i = 0; i < kolvo; i++) {
                 FwOneReg temp = getValue(buffer);
-                temp.setDate(date);
+                temp.setDate(ndate);
                 if (temp.getReg() != null) {
                     datas.add(temp);
                 }
             }
-            while (pos < len) {
-                int addms = FwUtil.ToShort(buffer, pos);
-                pos += 2;
-                kolvo = FwUtil.ToShort(buffer, pos);
-                pos += 2;
-                ndate = new Date(date.getTime() + addms);
-                for (int i = 0; i < kolvo; i++) {
-                    FwOneReg temp = getValue(buffer);
-                    temp.setDate(ndate);
-                    if (temp.getReg() != null) {
-                        datas.add(temp);
-                    }
-                }
 
-            }
-        }
-        catch (Exception ex) {
-            System.err.println("FwInfo error " + ex.getMessage());
         }
     }
+//        catch (Exception ex) {
+//            Log.CORE.error("FwInfo error " + ex.getMessage());
+//        }
 
-    private FwOneReg getValue(byte[] buffer)
-    {
-//        int uId = FwUtil.ToShort(buffer, pos);
-        int uId=(buffer[pos] << 8) | (buffer[pos+1] & 0xff);
+    private FwOneReg getValue(byte[] buffer) {
+        int uId = (buffer[pos] << 8) | (buffer[pos + 1] & 0xff);
         pos += 2;
-        FwOneReg temp = new FwOneReg();
-        temp.setReg(tableDecode.getRegister(controller, uId));
+        FwOneReg temp = new FwOneReg(System.currentTimeMillis(), tableDecode.getRegister(controller, uId));
         if (temp.getReg() == null) {
-            int mesto=uId>>8;
-            int sig=uId&0xff;
-            System.err.println("not found " + Integer.toString(controller) + ":" + Integer.toString(mesto)+"-"+Integer.toString(sig)+"/"+Integer.toString(uId));
+            int mesto = uId >> 8;
+            int sig = uId & 0xff;
+            Log.CORE.error("not found " + Integer.toString(controller) + ":" + Integer.toString(mesto) + "-" + Integer.toString(sig) + "/" + Integer.toString(uId));
             pos += 2;
-        }
-        else {
+        } else {
             temp.getBuffer(buffer, pos);
             pos += temp.getReg().getLen();
 
@@ -209,18 +190,15 @@ class FwInfo extends FwBaseMess
     /**
      * @return the nomer
      */
-    public int getNomer()
-    {
+    public int getNomer() {
         return nomer;
     }
 
-    public int getSize()
-    {
+    public int getSize() {
         return datas.size();
     }
 
-    public FwOneReg getOneReg(int idx)
-    {
+    public FwOneReg getOneReg(int idx) {
         return datas.get(idx);
     }
 
@@ -231,8 +209,7 @@ class FwInfo extends FwBaseMess
      * @return false если места уже нет . Соответственно переменная не
      * записывается true -если все ок
      */
-    public boolean addOneReg(FwOneReg value)
-    {
+    public boolean addOneReg(FwOneReg value) {
         if (isFull()) {
             return false;
         }
@@ -244,20 +221,17 @@ class FwInfo extends FwBaseMess
      *
      * @return true is full
      */
-    public boolean isFull()
-    {
+    public boolean isFull() {
         return datas.size() > MAX_SIZE;
     }
 
     @Override
-    public int getController()
-    {
+    public int getController() {
         return controller;
     }
 
     @Override
-    public byte getFunctionCode()
-    {
+    public byte getFunctionCode() {
         return functioncode;
     }
 

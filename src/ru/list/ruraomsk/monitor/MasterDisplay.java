@@ -18,7 +18,6 @@ import ru.list.ruraomsk.fwlib.FwMasterDevice;
 import ru.list.ruraomsk.fwlib.FwOneReg;
 import ru.list.ruraomsk.fwlib.FwRegisters;
 import ru.list.ruraomsk.fwlib.FwSlaveDevice;
-import ru.list.ruraomsk.fwlib.SlaveListner;
 
 /**
  *
@@ -79,8 +78,7 @@ class MasterDisplay extends Thread
                 {
                     Date dd = new Date();
                     Message.setText("Текущее состояние на " + dd.toString());
-                    Message.append("\nТекущий номер посылки=" + Integer.toString(md.nomerinfo)
-                            + " Ошибок=" + Integer.toString(md.error));
+                    Message.append("\nТекущий номер посылки=" + Integer.toString(md.nomerinfo));
                     Message.append("\nПоследняя синхронизация " + md.lastsync.toString());
                     Message.append("\nСтрока UPC="+md.getUPCMessage());
                     FwOneReg oreg = md.getHistory();

@@ -5,6 +5,7 @@
  */
 package ru.list.ruraomsk.fwlib;
 
+import com.tibbo.aggregate.common.Log;
 import java.net.Socket;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class FwMasterDevice extends Thread
 {
 
-    private ConcurrentHashMap<Long, FwOneReg> data = null;
+    private ConcurrentHashMap<Integer, FwOneReg> data = null;
     private ConcurrentLinkedQueue<FwOneReg> history = null;
     private ConcurrentLinkedQueue<FwBaseMess> inmessages = null;
     private ConcurrentLinkedQueue<FwBaseMess> outmessages = null;
@@ -27,7 +28,6 @@ public class FwMasterDevice extends Thread
     private FwInfo info = null;
     private FwRegisters tableDecode = null;
     private long stepTime = FwUtil.FP_STEP_TIME;
-    public int error = -1;
     public Date lastsync = new Date();
     private Date lastlive = new Date();
     private boolean connect = false;
@@ -49,10 +49,10 @@ public class FwMasterDevice extends Thread
         history = new ConcurrentLinkedQueue<>();
         inmessages = new ConcurrentLinkedQueue<>();
         outmessages = new ConcurrentLinkedQueue<>();
-
+        Long now=System.currentTimeMillis();
         for (FwRegister reg : tableDecode.getCollection()) {
             if ((reg.getController() == controller)) {
-                FwOneReg onereg = new FwOneReg(new Date(), reg);
+                FwOneReg onereg = new FwOneReg(now, reg);
                 data.put(reg.getKey(), onereg);
             }
         }
@@ -67,33 +67,27 @@ public class FwMasterDevice extends Thread
             connect = false;
             mytransport = new FwTransport(socket, tableDecode);
             if (mytransport == null) {
-                error = 5;
+                Log.CORE.error("Транспорт не запустился "+myAddress());
                 return;
             }
             if (!(connect = mytransport.connect())) {
-                error = 6;
+                Log.CORE.error("Транспорт нет связи "+myAddress());
                 return;
             }
         }
         catch (Exception ex) {
-            error = 12;
+                Log.CORE.error("Транспорт "+myAddress()+" "+ex.getMessage());
             return;
         }
         if (!connect) {
             return;
         }
         start();
-
     }
 
     public boolean isConnected()
     {
         return connect;
-    }
-
-    public int getErrors()
-    {
-        return error;
     }
 
     public void disconect()
@@ -167,14 +161,12 @@ public class FwMasterDevice extends Thread
                     lastLive = now;
                 }
                 while ((resp = mytransport.readMessage()) != null) {
-                    //if(FwUtil.FP_DEBUG) System.err.println("step 1");
                     if (resp.getController() != controller) {
-                        System.err.println("Неверный номер контроллера " + Integer.toString(resp.getController()));
+                        Log.CORE.error("Неверный номер контроллера " + Integer.toString(resp.getController()));
                         errFuncCode = resp.getFunctionCode();
                         disconect();
                         break;
                     }
-                    //if(FwUtil.FP_DEBUG) System.err.println("step 2");
                     switch (resp.getFunctionCode()) {
                         case FwUtil.FP_CODE_INFO:
                             readValues(resp.getInfo());
@@ -203,18 +195,21 @@ public class FwMasterDevice extends Thread
 
         }
         catch (InterruptedException ex) {
-            System.err.println("FwMasterDevice " + ex.getMessage());
+            Log.CORE.error("MasterDevice "+myAddress()+" "+ ex.getMessage());
             disconect();
         }
     }
 
     private void readValues(FwInfo info)
     {
+        if(info==null){
+            Log.CORE.error("Пустой инфо!");
+            return;
+        }
+            
         nomerinfo = info.getNomer();
-//        Log.CORE.info("Элементов ="+Integer.toString(info.getSize()));
         for (int i = 0; i < info.getSize(); i++) {
             FwOneReg value = info.getOneReg(i);
-            //System.out.println("===uId="+Integer.toString(value.getuId())+" value="+value.getValue().toString());
             history.add(value);
 
             data.put(value.getReg().getKey(), value);
@@ -223,7 +218,7 @@ public class FwMasterDevice extends Thread
 
     public FwOneReg getOneReg(int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
 
         return data.get(key);
     }
@@ -280,7 +275,7 @@ public class FwMasterDevice extends Thread
 
     public Object getValue(int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
         if (data.get(key) == null) {
             return null;
         }
@@ -289,7 +284,7 @@ public class FwMasterDevice extends Thread
 
     public Object getCode(int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, false);
+        int key = FwRegister.makeKey(controller, uId, false);
         if (data.get(key) == null) {
             return null;
         }
@@ -298,13 +293,14 @@ public class FwMasterDevice extends Thread
 
     private void readDiags(FwDiag diag)
     {
+        long now=System.currentTimeMillis();
         for (int i = 0; i < diag.getSize(); i++) {
             FwRegister one = tableDecode.getRegisterDiag(controller, diag.getDiagUId(i));
             if (one == null) {
-                System.err.println("Нет диагностики controller=" + Integer.toString(controller) + " uId=" + Integer.toString(diag.getDiagUId(i)));
+                Log.CORE.error("Нет диагностики controller=" + Integer.toString(controller) + " uId=" + Integer.toString(diag.getDiagUId(i)));
                 continue;
             }
-            FwOneReg value = new FwOneReg(new Date(), one);
+            FwOneReg value = new FwOneReg(now, one);
             value.setValue(diag.getDiagCode(i));
             value.setGood(FwUtil.FP_DATA_GOOD);
             history.add(value);

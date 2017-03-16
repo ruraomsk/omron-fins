@@ -129,7 +129,6 @@ public class FwLoadFile extends DefaultContextEventListener
     @Override
     public void handle(Event event) throws EventHandlingException
     {
-//        Log.CORE.info("Пришли в обработчик");
         DataTable ed = event.getData();
         if (event.getName().equals("Event_35H")) {
             for (DataRecord rd : ed) {
@@ -139,18 +138,18 @@ public class FwLoadFile extends DefaultContextEventListener
                 int command = rd.getInt("command");
                 FwState st = map.get(controller);
                 if (st == null) {
-                    Log.CORE.info("Нет такого контроллера " + Integer.toString(controller));
+                    Log.CORE.error("Нет такого контроллера " + Integer.toString(controller));
                     continue;
                 }
                 if (nom_file != st.nom_file || nomer != st.nomer) {
-                    Log.CORE.info("Для контроллера " + Integer.toString(controller) + " неверная квитанция");
+                    Log.CORE.error("Для контроллера " + Integer.toString(controller) + " неверная квитанция");
                     continue;
                 }
                 st.rezult = rd.getInt("result");
                 if (st.rezult != 0) {
                     st.back();
                     if (++st.count > 3) {
-                        Log.CORE.info("Для контроллера " + Integer.toString(controller) + " очень много ошибок");
+                        Log.CORE.error("Для контроллера " + Integer.toString(controller) + " очень много ошибок");
                         continue;
                     }
                     putmessage(controller, st);
@@ -168,7 +167,7 @@ public class FwLoadFile extends DefaultContextEventListener
                 int controller = rd.getInt("Controller");
                 FwState st = map.get(controller);
                 if (st == null) {
-                    Log.CORE.info("Нет такого контроллера " + Integer.toString(controller));
+                    Log.CORE.error("Нет такого контроллера " + Integer.toString(controller));
                     continue;
                 }
                 st.nom_file = rd.getInt("file");

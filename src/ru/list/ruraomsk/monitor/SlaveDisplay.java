@@ -6,8 +6,6 @@
 package ru.list.ruraomsk.monitor;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import static java.awt.EventQueue.invokeLater;
 import java.util.Date;
 import javax.swing.*;
 import ru.list.ruraomsk.fwlib.FwBaseMess;
@@ -17,14 +15,12 @@ import ru.list.ruraomsk.fwlib.FwRegisters;
 import ru.list.ruraomsk.fwlib.FwSetup;
 import ru.list.ruraomsk.fwlib.FwSlaveDevice;
 import ru.list.ruraomsk.fwlib.FwUtil;
-import ru.list.ruraomsk.fwlib.SlaveListner;
 
 /**
  *
  * @author Русинов Юрий <ruraomsk@list.ru>
  */
-class SlaveDisplay extends Thread
-{
+class SlaveDisplay extends Thread {
 
     private String name;
     private FwSlaveDevice sd;
@@ -40,8 +36,7 @@ class SlaveDisplay extends Thread
     private JPanel pan;
     private String UPCMessage = "My system is code=0";
 
-    SlaveDisplay(String name, FwSlaveDevice sd)
-    {
+    SlaveDisplay(String name, FwSlaveDevice sd) {
 
         this.name = name;
         this.sd = sd;
@@ -70,8 +65,7 @@ class SlaveDisplay extends Thread
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         try {
             while (!Thread.interrupted()) {
                 synchronized (Monitor.frame) {
@@ -86,11 +80,8 @@ class SlaveDisplay extends Thread
                     Message.append("\nСостояние UPC=" + UPCMessage);
                     Message.append("\nПоследняя синхронизация " + sd.lastsync.toString());
 
-                    Message.append("\nПодключено мастеров " + sd.listners.size());
-                    for (SlaveListner sl : sd.listners.values()) {
-                        Message.append("\nСоединение=" + (sl.isconnected() ? "Есть" : "Отсутствует")
-                                + " Счетчик жизни=" + Integer.toString(sl.LiveCount()));
-                    }
+                    Message.append("\nСоединение=" + (sd.isconnected() ? "Есть" : "Отсутствует")
+                            + " Счетчик жизни=" + Integer.toString(sd.LiveCount()));
                     FwBaseMess mess;
                     while ((mess = sd.readMessage()) != null) {
                         if (mess.getFunctionCode() == FwUtil.FP_CODE_34H) {
@@ -107,11 +98,11 @@ class SlaveDisplay extends Thread
                             back.setNomer(ms.getNomer());
                             Texts.append("\nОтправлена квитанция");
                             sd.putMessage(back);
-                            if(ms.getCmd()==FwUtil.FW_CMD_RECIVE){
-                                FwSetup recive=new FwSetup(false, controller, ms.getNomFile(), ms.getNomer(),FwUtil.FW_CMD_LAST);
+                            if (ms.getCmd() == FwUtil.FW_CMD_RECIVE) {
+                                FwSetup recive = new FwSetup(false, controller, ms.getNomFile(), ms.getNomer(), FwUtil.FW_CMD_LAST);
                                 recive.setData("abcd".getBytes(), 4);
                                 sd.putMessage(recive);
-                            Texts.append("\nОтправлен ответный буфер");
+                                Texts.append("\nОтправлен ответный буфер");
                             }
                         }
                         if (mess.getFunctionCode() == FwUtil.FP_CODE_10H) {
@@ -129,8 +120,7 @@ class SlaveDisplay extends Thread
                 }
                 Thread.sleep(sd.getStepTime());
             }
-        }
-        catch (InterruptedException ex) {
+        } catch (InterruptedException ex) {
             Monitor.appendMessage("Устройство " + name + " завершает работу");
         }
     }

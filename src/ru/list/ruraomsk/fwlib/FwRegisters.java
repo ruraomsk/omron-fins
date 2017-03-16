@@ -15,7 +15,7 @@ import java.util.HashMap;
 public class FwRegisters
 {
 
-    private HashMap<Long, FwRegister> dc = null;
+    private HashMap<Integer, FwRegister> dc = null;
 
     public FwRegisters()
     {
@@ -34,13 +34,13 @@ public class FwRegisters
 
     public FwRegister getRegister(int controller, int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, true);
+        int key = FwRegister.makeKey(controller, uId, true);
         return dc.get(key);
     }
 
     public FwRegister getRegisterDiag(int controller, int uId)
     {
-        long key = FwRegister.makeKey(controller, uId, false);
+        int key = FwRegister.makeKey(controller, uId, false);
         return dc.get(key);
     }
 

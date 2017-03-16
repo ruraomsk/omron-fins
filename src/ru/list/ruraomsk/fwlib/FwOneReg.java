@@ -14,33 +14,30 @@ import java.util.Date;
 public class FwOneReg
 {
 
-    private long date = new Date().getTime();
+    private long date;
     private FwRegister reg = null;
     private Object value = null;
     private byte good = FwUtil.FP_DATA_NOGOOD;
 
-    public FwOneReg()
+    public FwOneReg(long date, FwRegister reg, Object value, byte good)
     {
-    }
-
-    public FwOneReg(Date date, FwRegister reg, Object value, byte good)
-    {
-        this.date = date.getTime();
+        this.date = date;
         this.reg = reg;
         this.value = value;
         this.good = good;
     }
 
-    public FwOneReg(Date date, FwRegister reg, Object value)
+    public FwOneReg(long date, FwRegister reg, Object value)
     {
-        this.date = date.getTime();
+        this.date = date;
         this.reg = reg;
         this.value = value;
+        this.good=FwUtil.FP_DATA_GOOD;
     }
 
-    public FwOneReg(Date date, FwRegister reg)
+    public FwOneReg(long date, FwRegister reg)
     {
-        this.date = date.getTime();
+        this.date = date;
         this.reg = reg;
         switch (reg.getType()) {
             case FwUtil.FP_TYPE_BOOL:
@@ -65,17 +62,17 @@ public class FwOneReg
     /**
      * @return the date
      */
-    public Date getDate()
+    public long getDate()
     {
-        return new Date(date);
+        return date;
     }
 
     /**
      * @param date the date to set
      */
-    public void setDate(Date date)
+    public void setDate(long date)
     {
-        this.date = date.getTime();
+        this.date = date;
     }
 
     /**
